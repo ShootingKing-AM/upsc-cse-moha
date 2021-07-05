@@ -717,9 +717,10 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
   );*/
 
   if (
-    oldState.channelId == newState.channelId &&
+    oldState.channelId ==
+    newState.channelId /*&&
     oldState.selfVideo == newState.selfVideo &&
-    oldState.selfStream == newState.selfStream
+    oldState.selfStream == newState.selfStream*/
   )
     return;
 
@@ -728,18 +729,26 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
 
   if (oldState.channelId != null) {
     if (
-      oldState.channelId === channelIdToWatch &&
+      oldState.channelId === channelIdToWatch ||
+      (oldState.channelId === channelId2ToWatch &&
+        (newState.channelId != channelIdToWatch ||
+          newState.channelId !=
+            channelId2ToWatch)) /*&&
       ((oldState.selfVideo == true &&
         oldState.selfStream == false &&
         newState.selfStream == false) || // Camm off
         (oldState.selfStream == true &&
           oldState.selfVideo == false &&
-          newState.selfVideo == false)) // Stream off
+          newState.selfVideo == false)) // Stream off */
     ) {
       let tsJoined = (await betterKV.get<string>(
         newState.member.user.id,
         'TempTimes'
       ))!;
+
+      let vcName = await discord
+        .getGuildVoiceChannel(oldState.channelId)
+        .then((c) => c!.name);
       //console.log(tsJoined);
       await betterKV.del(newState.member.user.id, 'TempTimes');
 
@@ -748,7 +757,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
 
       if (isNaN(parseFloat(sztsTimeSessionSpent))) {
         await loginfochannel?.sendMessage(
-          `**Error** Occred in Saving: \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying :smiling_face_with_tear: @ ` + //has left the voice channel
+          `**Error** Occred in Saving: \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in :speaker:\`${vcName}\`:smiling_face_with_tear: @ ` + //has left the voice channel
             Date.now() +
             ',\ntsJoined:' +
             tsJoined +
@@ -756,7 +765,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             sztsTimeSessionSpent
         );
         await memberinfochannel?.sendMessage(
-          `**Error** Occred in Saving: \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying :smiling_face_with_tear:. Please contact Mods.` //has left the voice channel
+          `**Error** Occred in Saving: \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in :speaker: \`${vcName}\`:smiling_face_with_tear:. Please contact Mods.` //has left the voice channel
         );
         return;
       }
@@ -779,7 +788,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             isNaN(parseFloat(hrsOldArray[TODAY_DATA_INDEX]))
           ) {
             await loginfochannel?.sendMessage(
-              `**Error** Occred in Saving (hrsOld[]): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying :smiling_face_with_tear: @ ` + //has left the voice channel
+              `**Error** Occred in Saving (hrsOld[]): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: @ ` + //has left the voice channel
                 Date.now() +
                 ',\nsztsTimeSessionSpent:' +
                 sztsTimeSessionSpent +
@@ -792,7 +801,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             );
 
             await memberinfochannel?.sendMessage(
-              `**Error** Occred in Saving (hrsOld[]): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying :smiling_face_with_tear: Please contact Mods.` //has left the voice channel
+              `**Error** Occred in Saving (hrsOld[]): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: Please contact Mods.` //has left the voice channel
             );
             return;
           }
@@ -834,7 +843,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
 
           if (isNaN(parseFloat(hrsOld))) {
             await loginfochannel?.sendMessage(
-              `Error Occred in Saving (hrsOld): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying :smiling_face_with_tear: @ ` + //has left the voice channel
+              `Error Occred in Saving (hrsOld): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: @ ` + //has left the voice channel
                 Date.now() +
                 '\ntsJoined:' +
                 tsJoined +
@@ -845,7 +854,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             );
 
             await memberinfochannel?.sendMessage(
-              `Error Occred in Saving (hrsOld): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying :smiling_face_with_tear: Please contact Mods.` //has left the voice channel
+              `Error Occred in Saving (hrsOld): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: Please contact Mods.` //has left the voice channel
             );
             return;
           }
@@ -906,19 +915,20 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
       let szExtTimeSpent = '';
       let flAdjTimeSpent = parseFloat(sztsTimeSessionSpent);
       if (flAdjTimeSpent > 1.0) {
-        szExtTimeSpent += Math.floor(flAdjTimeSpent) + ' `hrs` ';
+        szExtTimeSpent +=
+          Math.floor(flAdjTimeSpent) +
+          (Math.floor(flAdjTimeSpent) >= 2 ? ' `hrs` ' : ' `hr` ');
       }
 
-      szExtTimeSpent +=
-        ((flAdjTimeSpent - Math.floor(flAdjTimeSpent)) * 60).toFixed(1) +
-        ' `mins`';
+      let mins = (flAdjTimeSpent - Math.floor(flAdjTimeSpent)) * 60;
+      szExtTimeSpent += mins.toFixed(1) + (mins >= 2 ? ' `mins`' : ' `min`');
 
       await loginfochannel?.sendMessage(
         `\`${newState.member.user.username}#${
           newState.member.user.discriminator
         }\` (${newState.member.user.toMention()})(${
           newState.member.user.id
-        }) has stopped studying :smiling_face_with_tear: @ ` + //has left the voice channel
+        }) has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: @ ` + //has left the voice channel
           Date.now() +
           ` Time spent in this session : ` +
           szExtTimeSpent /*sztsTimeSessionSpent +
@@ -926,7 +936,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
       );
 
       await memberinfochannel?.sendMessage(
-        `\`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying :smiling_face_with_tear: ` + //has left the voice channel
+        `\`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: ` + //has left the voice channel
           ` Time spent in this session : ` +
           szExtTimeSpent /*sztsTimeSessionSpent +
           ' hrs'*/
@@ -935,25 +945,32 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
   }
 
   if (
-    newState.channelId === channelIdToWatch &&
+    (newState.channelId === channelIdToWatch ||
+      newState.channelId === channelId2ToWatch) &&
+    (oldState.channelId != channelIdToWatch ||
+      oldState.channelId !=
+        channelId2ToWatch) /*&&
     ((newState.selfVideo == true &&
       newState.selfStream == false &&
       oldState.selfStream == false) || // Cam on
       (newState.selfStream == true &&
         newState.selfVideo == false &&
-        oldState.selfVideo == false)) // Stream on
+        oldState.selfVideo == false)) // Stream on*/
   ) {
+    let vcName = await discord
+      .getGuildVoiceChannel(newState.channelId)
+      .then((c) => c!.name);
     //let channel = await discord.getGuildTextChannel(channelId);
     await loginfochannel?.sendMessage(
       `\`${newState.member.user.username}#${
         newState.member.user.discriminator
       }\` (${
         newState.member.user.id
-      }) ${newState.member.user.toMention()} has started studying :smirk_cat: @ ` +
+      }) ${newState.member.user.toMention()} has started studying in :speaker:\`${vcName}\` :smirk_cat: @ ` +
         Date.now() //joined the voice channel
     );
     await memberinfochannel?.sendMessage(
-      `\`${newState.member.user.username}#${newState.member.user.discriminator}\` has started studying :smirk_cat: ` //joined the voice channel
+      `\`${newState.member.user.username}#${newState.member.user.discriminator}\` has started studying in :speaker:\`${vcName}\` :smirk_cat: ` //joined the voice channel
     );
 
     await betterKV.del(newState.member.user.id, 'TempTimes');
