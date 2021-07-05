@@ -7,6 +7,7 @@ let topMessageChannelID = loginfoChannelID; // Same as Log-Info Channel
 
 let channelId = '780116866484011040'; // Channel to send Normal bot(non-log) response messages & To receive bot userCmds
 let channelIdToWatch = '813261332630863882'; // Voice Channel to Watch
+let channelId2ToWatch = '770632381598138431'; // Silent-self-study channel
 
 let defaultPrefix = '$';
 
