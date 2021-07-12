@@ -717,6 +717,70 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
     `<@${newState.member.user.id}> has interacted with a VoiceChannel !!`
   );*/
 
+  /*
+  Case 1: Newly joins
+  NewCHannel = study on Cam Channel
+  Video / SS -> off
+  
+  Case 2: Already in channel
+  OldChannell == NewCHannel == study on cam channel
+  Video/SS -> Off
+
+  when he Turn on CAMor SS & newChell = study on cam then off.
+  */
+
+  let loginfochannel = await discord.getGuildTextChannel(loginfoChannelID);
+  let memberinfochannel = await discord.getGuildTextChannel(channelId);
+
+  if (
+    newState.channelId == channelIdToWatch &&
+    newState.selfVideo == false &&
+    newState.selfStream == false
+  ) {
+    let guild = await discord.getGuild();
+    let userid = newState.userId;
+    let memeber = newState.member;
+    //console.log('Setting Timout !');
+
+    setTimeout(
+      async ([guild, userid, memeber]) => {
+        //console.log('function Called ! ' + userid + ':' + guild);
+        let presentVoiceState = await discord
+          .getGuild()
+          .then((g) => g.getVoiceState(userid));
+        //console.log('test 1');
+        if (
+          presentVoiceState!.selfStream == false &&
+          presentVoiceState!.selfVideo == false &&
+          presentVoiceState!.channelId == channelIdToWatch
+        ) {
+          //console.log('test 1');
+          (memeber as discord.GuildMember)!.edit({
+            channelId: channelId2ToWatch
+          });
+
+          let channelName = await (guild as discord.Guild)!
+            .getChannel(channelId2ToWatch)
+            .then((c) => c!.name);
+
+          await memberinfochannel!.sendMessage(
+            `${(memeber as discord.GuildMember).toMention()} has been moved to :speaker: \`${channelName}\` for not using Cam or ScreenShare.`
+          );
+          await loginfochannel!.sendMessage({
+            content: `${(memeber as discord.GuildMember).toMention()}(\`${(memeber as discord.GuildMember).user.getTag()}\`) (\`${
+              (memeber as discord.GuildMember).user.id
+            }\`) has been moved to :speaker: \`${channelName}\` for not using Cam or ScreenShare.`,
+            allowedMentions: {}
+          });
+        }
+      },
+      20000,
+      guild,
+      userid,
+      memeber
+    );
+  }
+
   if (
     oldState.channelId ==
     newState.channelId /*&&
@@ -724,9 +788,6 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
     oldState.selfStream == newState.selfStream*/
   )
     return;
-
-  let loginfochannel = await discord.getGuildTextChannel(loginfoChannelID);
-  let memberinfochannel = await discord.getGuildTextChannel(channelId);
 
   if (oldState.channelId != null) {
     if (
@@ -924,17 +985,19 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
       let mins = (flAdjTimeSpent - Math.floor(flAdjTimeSpent)) * 60;
       szExtTimeSpent += mins.toFixed(1) + (mins >= 2 ? ' `mins`' : ' `min`');
 
-      await loginfochannel?.sendMessage(
-        `\`${newState.member.user.username}#${
-          newState.member.user.discriminator
-        }\` (${newState.member.user.toMention()})(${
-          newState.member.user.id
-        }) has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: @ ` + //has left the voice channel
+      await loginfochannel?.sendMessage({
+        content:
+          `\`${newState.member.user.username}#${
+            newState.member.user.discriminator
+          }\` (${newState.member.user.toMention()})(${
+            newState.member.user.id
+          }) has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: @ ` + //has left the voice channel
           Date.now() +
           ` Time spent in this session : ` +
           szExtTimeSpent /*sztsTimeSessionSpent +
-          ' hrs'*/
-      );
+          ' hrs'*/,
+        allowedMentions: {}
+      });
 
       await memberinfochannel?.sendMessage(
         `\`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: ` + //has left the voice channel
@@ -962,14 +1025,16 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
       .getGuildVoiceChannel(newState.channelId)
       .then((c) => c!.name);
     //let channel = await discord.getGuildTextChannel(channelId);
-    await loginfochannel?.sendMessage(
-      `\`${newState.member.user.username}#${
-        newState.member.user.discriminator
-      }\` (${
-        newState.member.user.id
-      }) ${newState.member.user.toMention()} has started studying in :speaker:\`${vcName}\` :smirk_cat: @ ` +
-        Date.now() //joined the voice channel
-    );
+    await loginfochannel?.sendMessage({
+      content:
+        `\`${newState.member.user.username}#${
+          newState.member.user.discriminator
+        }\` (${
+          newState.member.user.id
+        }) ${newState.member.user.toMention()} has started studying in :speaker:\`${vcName}\` :smirk_cat: @ ` +
+        Date.now(), //joined the voice channel
+      allowedMentions: {}
+    });
     await memberinfochannel?.sendMessage(
       `\`${newState.member.user.username}#${newState.member.user.discriminator}\` has started studying in :speaker:\`${vcName}\` :smirk_cat: ` //joined the voice channel
     );
