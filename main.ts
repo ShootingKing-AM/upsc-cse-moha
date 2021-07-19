@@ -842,6 +842,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
 
       // TotalTimes Namespace- Saves Complete times
       let exits = await betterKV.exist(newState.member.user.id, 'TotalTimes');
+      let totalTodayTime;
       if (exits) {
         // Old time exits; Not a new user
         let hrsOld = (await betterKV.get<string>(
@@ -881,7 +882,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             parseFloat(sztsTimeSessionSpent)
           ).toFixed(2);
 
-          let totalTodayTime = (
+          totalTodayTime = (
             parseFloat(hrsOldArray[TODAY_DATA_INDEX]) +
             parseFloat(sztsTimeSessionSpent)
           ).toFixed(2);
@@ -933,6 +934,8 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             parseFloat(hrsOld) + parseFloat(sztsTimeSessionSpent)
           ).toFixed(2);
 
+          totalTodayTime = sztsTimeSessionSpent;
+
           await betterKV.save(
             newState.member.user.id,
             totalAllTime + ',' + sztsTimeSessionSpent,
@@ -958,6 +961,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
         }
       } else {
         // Old time dosent exist; New user
+        totalTodayTime = sztsTimeSessionSpent;
         await betterKV.save(
           newState.member.user.id,
           sztsTimeSessionSpent + ',' + sztsTimeSessionSpent,
@@ -995,24 +999,28 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
 
       await loginfochannel?.sendMessage({
         content:
-          `\`${newState.member.user.username}#${
-            newState.member.user.discriminator
-          }\` (${newState.member.user.toMention()})(${
-            newState.member.user.id
-          }) has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: @ ` + //has left the voice channel
+          `\`${newState.member.user.username}#${newState.member.user.discriminator}\` <@!${newState.member.user.id}> (${newState.member.user.id}) has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: @ ` + //has left the voice channel
           Date.now() +
-          ` Time spent in this session : ` +
+          ` Time spent, *In this session*: ` +
           szExtTimeSpent /*sztsTimeSessionSpent +
-          ' hrs'*/,
+          ' hrs'*/ +
+          ' and *Today*: ' +
+          totalTodayTime +
+          ' `hrs`',
         allowedMentions: {}
       });
 
-      await memberinfochannel?.sendMessage(
-        `\`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: ` + //has left the voice channel
-          ` Time spent in this session : ` +
+      await memberinfochannel?.sendMessage({
+        content:
+          `<@!${newState.member.user.id}>[\`${newState.member.user.username}#${newState.member.user.discriminator}\`] has stopped studying in :speaker:\`${vcName}\` :smiling_face_with_tear: ` + //has left the voice channel
+          ` Time spent, *In this session*: ` +
           szExtTimeSpent /*sztsTimeSessionSpent +
-          ' hrs'*/
-      );
+          ' hrs'*/ +
+          ' and *Today*: ' +
+          totalTodayTime +
+          ' `hrs`',
+        allowedMentions: {}
+      });
     }
   }
 
