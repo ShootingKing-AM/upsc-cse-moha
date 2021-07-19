@@ -40,6 +40,10 @@ let arrHoursLevels = [
   [12, '857696421158584340'] //Learner -- Level 3;
 ];*/
 
+let sendPictureTopTen = true;
+/***********
+ * Dont edit anything Above this Line. These are Server Specific Settings.
+ **********/
 /*
  *  Character - !
  *  User Commands:
@@ -1352,11 +1356,13 @@ async function cron_task() {
     await sleep(1200);
     await memberinfochannel?.sendMessage(msg);
     await sleep(1200);
-    await sendTopPicToChannel(
-      memberinfochannel!,
-      loginfochannel!,
-      TODAY_DATA_INDEX
-    );
+    if (sendPictureTopTen) {
+      await sendTopPicToChannel(
+        memberinfochannel!,
+        loginfochannel!,
+        TODAY_DATA_INDEX
+      );
+    }
 
     loginfochannel?.triggerTypingIndicator();
     await sleep(1200);
