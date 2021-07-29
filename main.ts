@@ -525,7 +525,7 @@ async function sendTopPicToChannel(
   loginfoChannel: discord.GuildTextChannel,
   what: number
 ) {
-  replyChannel.triggerTypingIndicator();
+  await replyChannel.triggerTypingIndicator();
   let topMessageID = topMessageIDArray[what];
   //let msg = '**LeaderBoard** (__Today__)\n\n';
 
@@ -1204,7 +1204,7 @@ async function autoBackup_force() {
 async function autoBackup(allEntries: any) {
   let loginfochannel = await discord.getGuildTextChannel(loginfoChannelID);
 
-  loginfochannel?.triggerTypingIndicator();
+  await loginfochannel?.triggerTypingIndicator();
   await sleep(1300);
 
   await loginfochannel?.sendMessage('\t\tStarting **Daily Backup**...');
@@ -1257,19 +1257,19 @@ async function autoBackup(allEntries: any) {
     }
     jsonBackupString += '}';
 
-    loginfochannel?.triggerTypingIndicator();
+    await loginfochannel?.triggerTypingIndicator();
     await sleep(1200);
     await loginfochannel?.sendMessage('dataTodayTop, dataAllTimeTop ...');
 
-    loginfochannel?.triggerTypingIndicator();
+    await loginfochannel?.triggerTypingIndicator();
     await sleep(1200);
     await loginfochannel?.sendMessage(dataTodayTop);
 
-    loginfochannel?.triggerTypingIndicator();
+    await loginfochannel?.triggerTypingIndicator();
     await sleep(1200);
     await loginfochannel?.sendMessage(dataAllTimeTop);
 
-    loginfochannel?.triggerTypingIndicator();
+    await loginfochannel?.triggerTypingIndicator();
     await sleep(1200);
     await loginfochannel?.sendMessage({
       content: '\n**Backup** Completed.\nPacked jsonKVs',
@@ -1304,7 +1304,7 @@ async function testVar(
   msg: string
 ) {
   if (variable == null || variable == undefined) {
-    loginfochannel?.triggerTypingIndicator();
+    await loginfochannel?.triggerTypingIndicator();
     await sleep(1200);
     await loginfochannel?.sendMessage(msg + variable);
   }
@@ -1360,10 +1360,10 @@ async function cron_task() {
       logmsg += i + '. ' + `<@!${u?.id}> (${jsonTop[key]} hrs)\n`;
       i++;
     }
-    memberinfochannel?.triggerTypingIndicator();
-    await sleep(1200);
+    await memberinfochannel?.triggerTypingIndicator();
+    //await sleep(1200);
     await memberinfochannel?.sendMessage(msg);
-    await sleep(1200);
+    //await sleep(1200);
     if (sendPictureTopTen) {
       await sendTopPicToChannel(
         memberinfochannel!,
@@ -1372,8 +1372,8 @@ async function cron_task() {
       );
     }
 
-    loginfochannel?.triggerTypingIndicator();
-    await sleep(1200);
+    await loginfochannel?.triggerTypingIndicator();
+    //await sleep(1200);
     await loginfochannel?.sendMessage(logmsg);
 
     let allKeys = await betterKV.getEntries('TotalTimes');
@@ -1397,8 +1397,9 @@ async function cron_task() {
       }
     }, 3000);
 
-    loginfochannel?.triggerTypingIndicator();
-    await sleep(1200);
+    //await sleep(1200);
+    await loginfochannel?.triggerTypingIndicator();
+    //await sleep(1200);
     await loginfochannel?.sendMessage(
       'BurstCPU Result :\n' +
         'bucketMaximumMs: ' +
@@ -1419,11 +1420,12 @@ async function cron_task() {
     );
 
     //loginfochannel?.sendMessage('LeaderboardData: ' + topMessage?.content!);
-    await topMessage?.edit('{}');
+    await topMessage!.edit('{}');
 
-    loginfochannel?.triggerTypingIndicator();
-    await sleep(1200);
-    await loginfochannel?.sendMessage(
+    //await sleep(1200);
+    await loginfochannel!.triggerTypingIndicator();
+    //await sleep(1200);
+    await loginfochannel!.sendMessage(
       "**Cron Task** Completed. Cleared Yesterday's Leaderboard."
     );
   } catch (error) {
