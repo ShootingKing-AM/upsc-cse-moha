@@ -103,7 +103,7 @@ async function updateTopMessage(
     .then((c) => c?.getMessage(topMessageID));*/
   //console.log('awaiting done parsing json  ...' + topMessage?.content);
 
-  const jsonTop = JSON.parse(topMessage?.content!);
+  let jsonTop = JSON.parse(topMessage?.content!);
   /*const jsonTop = JSON.parse(
     '{"1":1980,"2":1981,"3":1982,"4":1983,"5":1984,"6":1985,"7":1986,"8":1987,"9":1988,"10":1989,"11":1990,"12":1991,"13":1992,"14":1993,"15":1994,"16":1995,"17":1996,"18":1997,"19":1998,"20":1999,"21":2000,"22":2001,"23":2002,"24":2003,"25":2004}'
   );*/
@@ -131,6 +131,10 @@ async function updateTopMessage(
 
   var sortable = [];
   for (var key in jsonTop) {
+    if (key == userID && jsonTop[key] <= 0) {
+      numObjects--;
+      continue;
+    }
     sortable.push([key, jsonTop[key]]);
   }
 
@@ -401,6 +405,8 @@ userCommands.on(
 
 userCommands.raw('clear', async (message) => {
   // Respond to the message, pinging the author.
+  await setTotalHrs(-1, 0, message, message.member.user);
+  /*
   let exits = await betterKV.exist(message.member.user.id, 'TotalTimes');
   if (exits) {
     let totalTime = await betterKV.get(message.member.user.id, 'TotalTimes');
@@ -409,7 +415,7 @@ userCommands.raw('clear', async (message) => {
         totalTime +
         ` hrs`
     );
-    betterKV.del(message.member.user.id, 'TotalTimes');
+    //betterKV.del(message.member.user.id, 'TotalTimes');
     await message.reply(
       `\`${message.member.user.username}#${message.member.user.discriminator}\` cleared his data`
     );
@@ -417,7 +423,7 @@ userCommands.raw('clear', async (message) => {
     await message.reply(
       `\`${message.member.user.username}#${message.member.user.discriminator}\` cleared his inexistent data :O`
     );
-  }
+  }*/
 });
 
 // A simple command, !ping -> Pong!
@@ -426,6 +432,7 @@ userCommands.raw('ping', async (message) => {
   console.log('Ping Called');
 });
 
+// Time : -1 -> Leave previous TotalTime Hrs
 async function setTotalHrs(
   time: number,
   todaytime: number,
@@ -446,18 +453,28 @@ async function setTotalHrs(
           ':' +
           origTimeArray[TODAY_DATA_INDEX] +
           '` to `' +
-          time.toFixed(2) +
+          (time < 0 ? origTimeArray[ALLTIME_DATA_INDEX] : time.toFixed(2)) +
           ':' +
           todaytime.toFixed(2) +
           `\` hrs by ${message.member?.user.toMention()}`
       );
       await betterKV.save(
         userObj.id,
-        time.toFixed(2) + ',' + todaytime.toFixed(2),
+        (time < 0 ? origTimeArray[ALLTIME_DATA_INDEX] : time.toFixed(2)) +
+          ',' +
+          todaytime.toFixed(2),
         'TotalTimes'
       );
-      updateTopMessage(userObj.id, time.toFixed(2), ALLTIME_DATA_INDEX);
-      updateTopMessage(userObj.id, todaytime.toFixed(2), TODAY_DATA_INDEX);
+      await updateTopMessage(
+        userObj.id,
+        time < 0 ? origTimeArray[ALLTIME_DATA_INDEX] : time.toFixed(2),
+        ALLTIME_DATA_INDEX
+      );
+      await updateTopMessage(
+        userObj.id,
+        todaytime.toFixed(2),
+        TODAY_DATA_INDEX
+      );
     } else {
       //Old DataScheme 'altime', Convert
 
@@ -465,7 +482,7 @@ async function setTotalHrs(
         `\`${userObj.username}#${userObj.discriminator}\`'s Total time has been modified from \`` +
           origTime +
           '` to `' +
-          time.toFixed(2) +
+          (time < 0 ? todaytime.toFixed(2) : time.toFixed(2)) +
           ':' +
           todaytime.toFixed(2) +
           `\` hrs by ${message.member?.user.toMention()}`
@@ -473,11 +490,21 @@ async function setTotalHrs(
 
       await betterKV.save(
         userObj.id,
-        time.toFixed(2) + ',' + todaytime.toFixed(2),
+        (time < 0 ? todaytime.toFixed(2) : time.toFixed(2)) +
+          ',' +
+          todaytime.toFixed(2),
         'TotalTimes'
       );
-      updateTopMessage(userObj.id, time.toFixed(2), ALLTIME_DATA_INDEX);
-      updateTopMessage(userObj.id, todaytime.toFixed(2), TODAY_DATA_INDEX);
+      await updateTopMessage(
+        userObj.id,
+        time < 0 ? todaytime.toFixed(2) : time.toFixed(2),
+        ALLTIME_DATA_INDEX
+      );
+      await updateTopMessage(
+        userObj.id,
+        todaytime.toFixed(2),
+        TODAY_DATA_INDEX
+      );
     }
   } else {
     await message.reply(
@@ -492,8 +519,8 @@ async function setTotalHrs(
       time.toFixed(2) + ',' + todaytime.toFixed(2),
       'TotalTimes'
     );
-    updateTopMessage(userObj.id, time.toFixed(2), ALLTIME_DATA_INDEX);
-    updateTopMessage(userObj.id, todaytime.toFixed(2), TODAY_DATA_INDEX);
+    await updateTopMessage(userObj.id, time.toFixed(2), ALLTIME_DATA_INDEX);
+    await updateTopMessage(userObj.id, todaytime.toFixed(2), TODAY_DATA_INDEX);
   }
 }
 
