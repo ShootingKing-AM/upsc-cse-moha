@@ -817,26 +817,26 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
   }
 
   if (
-    oldState.channelId ==
-    newState.channelId /*&&
+    oldState.channelId == newState.channelId &&
     oldState.selfVideo == newState.selfVideo &&
-    oldState.selfStream == newState.selfStream*/
+    oldState.selfStream == newState.selfStream
   )
     return;
 
   if (oldState.channelId != null) {
     if (
-      oldState.channelId === channelIdToWatch ||
-      (oldState.channelId === channelId2ToWatch &&
-        (newState.channelId != channelIdToWatch ||
-          newState.channelId !=
-            channelId2ToWatch)) /*&&
+      oldState.channelId ===
+        channelIdToWatch /*||
+      (oldState.channelId === channelId2ToWatch*/ /*&&
+      ( newState.channelId !=
+        channelIdToWatch /*||
+          newState.channelId != channelId2ToWatch)*/ &&
       ((oldState.selfVideo == true &&
         oldState.selfStream == false &&
-        newState.selfStream == false) || // Camm off
+        newState.selfVideo == false) || // Camm off
         (oldState.selfStream == true &&
           oldState.selfVideo == false &&
-          newState.selfVideo == false)) // Stream off */
+          newState.selfVideo == false)) /*)*/ // Stream off
     ) {
       let tsJoined = (await betterKV.get<string>(
         newState.member.user.id,
@@ -1052,17 +1052,18 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
   }
 
   if (
-    (newState.channelId === channelIdToWatch ||
-      newState.channelId === channelId2ToWatch) &&
-    (oldState.channelId != channelIdToWatch ||
-      oldState.channelId !=
-        channelId2ToWatch) /*&&
+    /*(*/ newState.channelId ===
+      channelIdToWatch /*||
+      newState.channelId === channelId2ToWatch)*/ &&
+    /*( oldState.channelId !=
+      channelIdToWatch ||
+      oldState.channelId != channelId2ToWatch) &&*/
     ((newState.selfVideo == true &&
       newState.selfStream == false &&
       oldState.selfStream == false) || // Cam on
       (newState.selfStream == true &&
         newState.selfVideo == false &&
-        oldState.selfVideo == false)) // Stream on*/
+        oldState.selfVideo == false)) // Stream on
   ) {
     let vcName = await discord
       .getGuildVoiceChannel(newState.channelId)
