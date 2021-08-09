@@ -9,6 +9,8 @@ let channelId = '780116866484011040'; // Channel to send Normal bot(non-log) res
 let channelIdToWatch = '813261332630863882'; // Voice Channel to Watch
 let channelId2ToWatch = '770632381598138431'; // Silent-self-study channel
 
+let channelCategoryToWatch = '874359220181536849'; //Study Over Cam/SS Channels category
+
 let defaultPrefix = '$';
 
 let ALLTIME_DATA_INDEX = 0;
@@ -823,15 +825,20 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
   )
     return;
 
+  let oldStateChannel = await oldState.getChannel();
+  let newStateChannel = await newState.getChannel();
+
   if (oldState.channelId != null) {
     if (
-      oldState.channelId ===
-        channelIdToWatch /*||
+      oldStateChannel!.parentId ==
+        channelCategoryToWatch /*||
       (oldState.channelId === channelId2ToWatch*/ /*&&
       ( newState.channelId !=
         channelIdToWatch /*||
           newState.channelId != channelId2ToWatch)*/ &&
-      ((oldState.selfVideo == true &&
+      /*oldState.channelId  ===
+        channelIdToWatch*/ ((oldState.selfVideo ==
+        true &&
         oldState.selfStream == false &&
         newState.selfVideo == false) || // Camm off
         (oldState.selfStream == true &&
@@ -1052,10 +1059,11 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
   }
 
   if (
-    /*(*/ newState.channelId ===
-      channelIdToWatch /*||
+    newStateChannel!.parentId ==
+      channelCategoryToWatch /*newState.channelId ===
+      channelIdToWatch*/ /*||
       newState.channelId === channelId2ToWatch)*/ &&
-    /*( oldState.channelId !=
+    /*(*/ /*( oldState.channelId !=
       channelIdToWatch ||
       oldState.channelId != channelId2ToWatch) &&*/
     ((newState.selfVideo == true &&
@@ -1066,7 +1074,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
         oldState.selfVideo == false)) // Stream on
   ) {
     let vcName = await discord
-      .getGuildVoiceChannel(newState.channelId)
+      .getGuildVoiceChannel(newState.channelId!)
       .then((c) => c!.name);
     //let channel = await discord.getGuildTextChannel(channelId);
     await loginfochannel?.sendMessage({
