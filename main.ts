@@ -62,7 +62,7 @@ let sendPictureTopTen = true;
  *  runabackup - forcefully run only autobackup of db  (normally run with cron task @ 3.00 AM)
  *  testlvl <hrs> - Run levels algorithm on you and assign you a level role wrt hrs passed.
  *  cleardbentry <dbKey> - Will delete the database Entry identified by dbKey
- *  loaddb <DBJson> - will add/updates all DBJson values into database
+ *  loadbackup <DBJson> - will add/updates all DBJson values into database
  */
 
 // Here's an example of how to use the built in command handler.
@@ -1241,7 +1241,7 @@ async function autoBackup(allEntries: any) {
   let loginfochannel = await discord.getGuildTextChannel(loginfoChannelID);
 
   await loginfochannel?.triggerTypingIndicator();
-  await sleep(1300);
+  //await sleep(1300);
 
   await loginfochannel?.sendMessage('\t\tStarting **Daily Backup**...');
   try {
@@ -1294,19 +1294,19 @@ async function autoBackup(allEntries: any) {
     jsonBackupString += '}';
 
     await loginfochannel?.triggerTypingIndicator();
-    await sleep(1200);
+    //await sleep(1200);
     await loginfochannel?.sendMessage('dataTodayTop, dataAllTimeTop ...');
 
     await loginfochannel?.triggerTypingIndicator();
-    await sleep(1200);
+    //await sleep(1200);
     await loginfochannel?.sendMessage(dataTodayTop);
 
     await loginfochannel?.triggerTypingIndicator();
-    await sleep(1200);
+    //await sleep(1200);
     await loginfochannel?.sendMessage(dataAllTimeTop);
 
     await loginfochannel?.triggerTypingIndicator();
-    await sleep(1200);
+    //await sleep(1200);
     await loginfochannel?.sendMessage({
       content: '\n**Backup** Completed.\nPacked jsonKVs',
       attachments: [
@@ -1341,7 +1341,7 @@ async function testVar(
 ) {
   if (variable == null || variable == undefined) {
     await loginfochannel?.triggerTypingIndicator();
-    await sleep(1200);
+    //await sleep(1200);
     await loginfochannel?.sendMessage(msg + variable);
   }
 }
@@ -1410,7 +1410,10 @@ async function cron_task() {
 
     await loginfochannel?.triggerTypingIndicator();
     //await sleep(1200);
-    await loginfochannel?.sendMessage(logmsg);
+    await loginfochannel?.sendMessage({
+      content: logmsg,
+      allowedMentions: {}
+    });
 
     let allKeys = await betterKV.getEntries('TotalTimes');
     await autoBackup(allKeys);
