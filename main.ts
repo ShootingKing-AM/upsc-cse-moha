@@ -1425,7 +1425,23 @@ async function cron_task() {
       for (let kv in allKeys) {
         //console.log(allKeys[kv]);
         //value = <string>await betterKV.get(allKeys[key], 'TotalTimes');
-        if ((allKeys[kv][1] as string)!.indexOf(',') != -1) {
+        /*if ((allKeys[kv][1] as string)!.indexOf(',') != -1) {
+          console.log(
+            parseFloat((allKeys[kv][1] as string).split(',')[1]) +
+              ',' +
+              typeof parseFloat((allKeys[kv][1] as string).split(',')[1]) +
+              ',' +
+              (allKeys[kv][1] as string).split(',')[1] +
+              ',' +
+              (allKeys[kv][1] as string).split(',') +
+              ',' +
+              (parseFloat((allKeys[kv][1] as string).split(',')[1]) != 0.0)
+          );
+        }*/
+        if (
+          (allKeys[kv][1] as string)!.indexOf(',') != -1 &&
+          parseFloat((allKeys[kv][1] as string).split(',')[1]) != 0.0
+        ) {
           // New DataScheme
           await betterKV.save(
             allKeys[kv][0],
@@ -1434,7 +1450,7 @@ async function cron_task() {
           );
         }
       }
-    }, 3000);
+    }, 5000);
 
     //await sleep(1200);
     await loginfochannel?.triggerTypingIndicator();
