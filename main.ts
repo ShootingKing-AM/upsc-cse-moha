@@ -8,7 +8,7 @@ let topMessageChannelID = loginfoChannelID; // Same as Log-Info Channel
 let channelId = '780116866484011040'; // Channel to send Normal bot(non-log) response messages & To receive bot userCmds
 let channelToSwitch = '770632381598138431'; // Silent-self-study channel | Channel to switch to if Member not turning on CAM/SS in ONLY channels
 
-let channelCategoriesToWatch = ['874359220181536849', '910578324391198791']; // All Study Over Cam/SS Channels category
+let channelCategoriesToWatch = ['874359220181536849', '910598376893063188']; // All Study Over Cam/SS Channels category
 let channelCategoriesCamSSOnlyToWatchCheck = ['874359220181536849']; // Study Over Cam/SS ONLY categories - for AFK Check; will be moved if not using Cam /SS
 
 let defaultPrefix = '$';
