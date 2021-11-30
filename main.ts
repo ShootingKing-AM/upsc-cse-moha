@@ -63,6 +63,7 @@ let sendPictureTopTen = true;
  *  testlvl <hrs> - Run levels algorithm on you and assign you a level role wrt hrs passed.
  *  cleardbentry <dbKey> - Will delete the database Entry identified by dbKey
  *  loadbackup <DBJson> - will add/updates all DBJson values into database
+ *  removelevelroles - will remove all level roles from all members
  */
 
 // Here's an example of how to use the built in command handler.
@@ -549,6 +550,110 @@ adminCommands.raw('runcron', async (message) => {
   await cron_task();
 });
 
+async function handleError(error: any, loginfochannel: any) {
+  if (error instanceof discord.ApiError) {
+    await loginfochannel?.sendMessage(
+      `\`\`\`java\n
+  [ERROR] discord.ApiError caught: Code: ${error.code}\n` +
+        `Endpoint: ${error.endpoint}\n` +
+        `httpMethod: ${error.httpMethod}\n` +
+        `httpStatus: ${error.httpStatus}\n` +
+        `httpStatusText: ${error.httpStatusText}\n` +
+        `message: ${error.message}\n` +
+        `name: ${error.name}\n` +
+        `stack: ${error.stack}\n \`\`\``
+    );
+  } else {
+    await loginfochannel?.sendMessage(
+      `\`\`\`java\n
+      [ERROR] General Error caught: ` +
+        error +
+        `\`\`\``
+    );
+  }
+}
+
+adminCommands.raw('removelevelroles', async (message) => {
+  let start = Date.now(),
+    polledUsersNo = 0,
+    profiledUsersNo = 0;
+
+  let loginfochannel = await discord.getGuildTextChannel(loginfoChannelID);
+
+  try {
+    let guild = await message.getGuild();
+    const result = await pylon.requestCpuBurst(async () => {
+      try {
+        for await (const member of guild.iterMembers()) {
+          polledUsersNo++;
+          for (let levelrole in arrHoursLevels) {
+            let index = member.roles.indexOf(
+              arrHoursLevels[levelrole][1] as string
+            );
+            /*console.log(
+          'levelrole:' +
+            arrHoursLevels[levelrole][1] +
+            ' - member.roles: ' +
+            member.roles.toString() +
+            ' - member: ' +
+            member.user.getTag() +
+            ' - index: ' +
+            index
+        );*/
+
+            if (index != undefined && index >= 0) {
+              await member.removeRole(arrHoursLevels[levelrole][1] as string);
+              await loginfochannel!.sendMessage({
+                content:
+                  'Member <@!' +
+                  member.user.id +
+                  '> stripped of his role <@&' +
+                  arrHoursLevels[levelrole][1] +
+                  '>',
+                allowedMentions: {}
+              });
+              profiledUsersNo++;
+              break;
+            }
+          }
+          //await member.addRole(arrHoursLevels[0][1] as string);
+        }
+      } catch (error) {
+        await handleError(error, loginfochannel);
+      }
+    }, 5000);
+
+    let stop = Date.now();
+    await loginfochannel?.sendMessage(
+      '```BurstCPU Result :\n' +
+        'bucketMaximumMs: ' +
+        result.bucketMaximumMs +
+        '\n' +
+        'bucketRemainingMs: ' +
+        result.bucketRemainingMs +
+        '\n' +
+        'bucketResetInMs: ' +
+        result.bucketResetInMs +
+        '\n' +
+        'result: ' +
+        result.result +
+        '\n' +
+        'usedCpuMs: ' +
+        result.usedCpuMs +
+        '```\n' +
+        'Profiled Data: Total exec time: `' +
+        (stop - start).toString() +
+        '` ns PolledUsers: `' +
+        polledUsersNo +
+        '` ProfiledUsers: `' +
+        profiledUsersNo +
+        '`'
+    );
+  } catch (err) {
+    handleError(err, loginfochannel);
+  }
+});
+
 async function sendTopPicToChannel(
   replyChannel: discord.GuildTextChannel,
   loginfoChannel: discord.GuildTextChannel,
@@ -804,7 +909,7 @@ function shouldStartStudySession(
       (newState.selfStream == true &&
         newState.selfVideo == false &&
         oldState.selfVideo == false) // Stream on
-    ) 
+    )
       return true;
     else return false;
   }
@@ -1364,20 +1469,7 @@ async function autoBackup(allEntries: any) {
       ]
     });
   } catch (error) {
-    if (error instanceof discord.ApiError) {
-      await loginfochannel?.sendMessage(
-        `discord.ApiError caught: Code: ${error.code}\n` +
-          `Endpoint: ${error.endpoint}\n` +
-          `httpMethod: ${error.httpMethod}\n` +
-          `httpStatus: ${error.httpStatus}\n` +
-          `httpStatusText: ${error.httpStatusText}\n` +
-          `message: ${error.message}\n` +
-          `name: ${error.name}\n` +
-          `stack: ${error.stack}\n`
-      );
-    } else {
-      await loginfochannel?.sendMessage(`General Error caught: ` + error);
-    }
+    handleError(error, loginfochannel);
   }
 }
 
@@ -1531,20 +1623,7 @@ async function cron_task() {
       "**Cron Task** Completed. Cleared Yesterday's Leaderboard."
     );
   } catch (error) {
-    if (error instanceof discord.ApiError) {
-      await loginfochannel?.sendMessage(
-        `discord.ApiError caught: Code: ${error.code}\n` +
-          `Endpoint: ${error.endpoint}\n` +
-          `httpMethod: ${error.httpMethod}\n` +
-          `httpStatus: ${error.httpStatus}\n` +
-          `httpStatusText: ${error.httpStatusText}\n` +
-          `message: ${error.message}\n` +
-          `name: ${error.name}\n` +
-          `stack: ${error.stack}\n`
-      );
-    } else {
-      await loginfochannel?.sendMessage(`General Error caught: ` + error);
-    }
+    handleError(error, loginfochannel);
   }
 }
 
