@@ -1,6 +1,6 @@
 import * as betterKV from './betterKV';
 
-let topMessageIDArray = ['850808004298145802', '852954136155914321'];
+let topMessageIDArray = ['915332272553590795', '915332252081197128'];
 
 let loginfoChannelID = '850411914815471639';
 let topMessageChannelID = loginfoChannelID; // Same as Log-Info Channel
