@@ -59,6 +59,7 @@ let sendPictureTopTen = true;
  *  setthrs @user <time> - eg. setthrs @sk 10.0 - Overwrites TotalTime Spent by user to <time>
  *  setstorage - will make the bot send a EmptyJSON for new LeaderBoard @warn You may lose exiting leaderboard
  *  runcron - forcefully run 3.00 AM CronTask, making dailytimes Reset & taking autobackup of db
+ *  runcroncheck - rechecks if the daily LB Reset task is sucessfully run or not, else restarts the dailyreset task
  *  runabackup - forcefully run only autobackup of db  (normally run with cron task @ 3.00 AM)
  *  testlvl <hrs> - Run levels algorithm on you and assign you a level role wrt hrs passed.
  *  cleardbentry <dbKey> - Will delete the database Entry identified by dbKey
@@ -349,6 +350,7 @@ userCommands.on(
     user: args.userOptional()
   }),
   async (message, { user }) => {
+    if (await userInteraction(message)) return;
     if (user != null) {
       await showUserIDTotalTime(message, user);
     } else {
@@ -361,6 +363,8 @@ userCommands.on(
   'lb',
   (args) => ({ what: args.stringOptional() }),
   async (message, { what }) => {
+    if (await userInteraction(message)) return;
+
     let topMessageID = topMessageIDArray[TODAY_DATA_INDEX];
     let msg = '**LeaderBoard** (__Today__)\n\n';
 
@@ -407,6 +411,7 @@ userCommands.on(
 );
 
 userCommands.raw('clear', async (message) => {
+  if (await userInteraction(message)) return;
   // Respond to the message, pinging the author.
   await setTotalHrs(-1, 0, message, message.member.user);
   /*
@@ -550,11 +555,20 @@ adminCommands.raw('runcron', async (message) => {
   await cron_task();
 });
 
-async function handleError(error: any, loginfochannel: any) {
+adminCommands.raw('runcroncheck', async (message) => {
+  await checkAndRestartDailyResetTask(
+    `Administrator(${message.author.toMention()}) executed command`,
+    true
+  );
+});
+
+async function handleError(error: any, loginfochannel: any = undefined) {
+  if (loginfochannel == undefined) {
+    loginfochannel = await discord.getGuildTextChannel(loginfoChannelID);
+  }
   if (error instanceof discord.ApiError) {
     await loginfochannel?.sendMessage(
-      `\`\`\`java\n
-  [ERROR] discord.ApiError caught: Code: ${error.code}\n` +
+      `\`\`\`javascript\n[ERROR] discord.ApiError caught: Code: ${error.code}\n` +
         `Endpoint: ${error.endpoint}\n` +
         `httpMethod: ${error.httpMethod}\n` +
         `httpStatus: ${error.httpStatus}\n` +
@@ -565,10 +579,11 @@ async function handleError(error: any, loginfochannel: any) {
     );
   } else {
     await loginfochannel?.sendMessage(
-      `\`\`\`java\n
-      [ERROR] General Error caught: ` +
-        error +
-        `\`\`\``
+      `\`\`\`javascript\n[ERROR] Generic Error caught: ${error}\n` +
+        `type: ${typeof error}\n` +
+        `message: ${error.message}\n` +
+        `Error name: ${error.name}\n` +
+        `stack: ${error.stack}\n \`\`\``
     );
   }
 }
@@ -1392,7 +1407,7 @@ async function autoBackup_force() {
 async function autoBackup(allEntries: any) {
   let loginfochannel = await discord.getGuildTextChannel(loginfoChannelID);
 
-  await loginfochannel?.triggerTypingIndicator();
+  //await loginfochannel?.triggerTypingIndicator();
   //await sleep(1300);
 
   await loginfochannel?.sendMessage('\t\tStarting **Daily Backup**...');
@@ -1445,19 +1460,19 @@ async function autoBackup(allEntries: any) {
     }
     jsonBackupString += '}';
 
-    await loginfochannel?.triggerTypingIndicator();
+    //await loginfochannel?.triggerTypingIndicator();
     //await sleep(1200);
     await loginfochannel?.sendMessage('dataTodayTop, dataAllTimeTop ...');
 
-    await loginfochannel?.triggerTypingIndicator();
+    //await loginfochannel?.triggerTypingIndicator();
     //await sleep(1200);
     await loginfochannel?.sendMessage(dataTodayTop);
 
-    await loginfochannel?.triggerTypingIndicator();
+    //await loginfochannel?.triggerTypingIndicator();
     //await sleep(1200);
     await loginfochannel?.sendMessage(dataAllTimeTop);
 
-    await loginfochannel?.triggerTypingIndicator();
+    //await loginfochannel?.triggerTypingIndicator();
     //await sleep(1200);
     await loginfochannel?.sendMessage({
       content: '\n**Backup** Completed.\nPacked jsonKVs',
@@ -1494,6 +1509,9 @@ async function cron_task() {
   await loginfochannel?.sendMessage('**Cron Task** Starting....');
 
   try {
+    await betterKV.del('resetedToday', 'MohaAdmin');
+    await betterKV.save('dailyresettaskstart', Date.now(), 'MohaAdmin');
+
     const channel = await discord.getGuildTextChannel(topMessageChannelID);
     await testVar(
       channel,
@@ -1535,7 +1553,7 @@ async function cron_task() {
       logmsg += i + '. ' + `<@!${u?.id}> (${jsonTop[key]} hrs)\n`;
       i++;
     }
-    await memberinfochannel?.triggerTypingIndicator();
+    //await memberinfochannel?.triggerTypingIndicator();
     //await sleep(1200);
     await memberinfochannel?.sendMessage(msg);
     //await sleep(1200);
@@ -1547,7 +1565,7 @@ async function cron_task() {
       );
     }
 
-    await loginfochannel?.triggerTypingIndicator();
+    //await loginfochannel?.triggerTypingIndicator();
     //await sleep(1200);
     await loginfochannel?.sendMessage({
       content: logmsg,
@@ -1592,23 +1610,18 @@ async function cron_task() {
     }, 5000);
 
     //await sleep(1200);
-    await loginfochannel?.triggerTypingIndicator();
+    //await loginfochannel?.triggerTypingIndicator();
     //await sleep(1200);
     await loginfochannel?.sendMessage(
-      'BurstCPU Result :\n' +
-        'bucketMaximumMs: ' +
+      'BurstCPU Result :\nbucketMaximumMs: ' +
         result.bucketMaximumMs +
-        '\n' +
-        'bucketRemainingMs: ' +
+        '\nbucketRemainingMs: ' +
         result.bucketRemainingMs +
-        '\n' +
-        'bucketResetInMs: ' +
+        '\nbucketResetInMs: ' +
         result.bucketResetInMs +
-        '\n' +
-        'result: ' +
+        '\nresult: ' +
         result.result +
-        '\n' +
-        'usedCpuMs: ' +
+        '\nusedCpuMs: ' +
         result.usedCpuMs +
         '\n'
     );
@@ -1617,8 +1630,11 @@ async function cron_task() {
     await topMessage!.edit('{}');
 
     //await sleep(1200);
-    await loginfochannel!.triggerTypingIndicator();
+    //await loginfochannel!.triggerTypingIndicator();
     //await sleep(1200);
+    await betterKV.save('resetedToday', '1', 'MohaAdmin');
+    await betterKV.del('dailyresettaskstart', 'MohaAdmin');
+
     await loginfochannel!.sendMessage(
       "**Cron Task** Completed. Cleared Yesterday's Leaderboard."
     );
@@ -1627,7 +1643,148 @@ async function cron_task() {
   }
 }
 
-//IST 0330 HRS = UTC 2200 HRS
-pylon.tasks.cron('cron_task', '0 0 22 * * * *', async () => {
+//IST 0330 HRS = UTC 2200 HRS <- Initial
+//IST 0323 HRS = UTC 2153 HRS <- Updated to not to use :00 Min to de-load pylon bot's global rate-limits
+pylon.tasks.cron('cron_task', '0 51 21 * * * *', async () => {
   await cron_task();
 });
+
+// +3 mins (180 secs) to the above task
+/* --FailSafe 1--
+ * Pylon will not throw any error if the execution failed due to its exeuction-limit passed
+ * then usual finally() block will not work, hence this redundant task as failsafe is required
+ */
+pylon.tasks.cron('cron_task_failsafe1', '0 54 21 * * * *', async () => {
+  await checkAndRestartDailyResetTask('**FailSafe 1**', true);
+});
+
+// +4 mins (240 secs) to the above task
+/* --FailSafe 2-- */
+pylon.tasks.cron('cron_task_failsafe2', '0 58 21 * * * *', async () => {
+  await checkAndRestartDailyResetTask('**FailSafe 2**', true);
+});
+
+//DailyReset Task Statusus
+const DAILY_TASK_SUCCESSFUL = 1;
+const DAILY_TASK_RUNNING = 2;
+const DAILY_TASK_FAILED = 3;
+
+async function getDailyResetTaskStatus(): Promise<Number> {
+  return new Promise<Number>(async (resolve, reject) => {
+    let val = await betterKV.get('resetedToday', 'MohaAdmin');
+    let startTimestamp = await betterKV.get<number>(
+      'dailyresettaskstart',
+      'MohaAdmin'
+    );
+
+    /*console.log(
+      'sTS:' +
+        startTimestamp +
+        ' val:' +
+        val +
+        'type of val: ' +
+        typeof val +
+        ' (val == undefined): ' +
+        (val == undefined)
+    );*/
+
+    if (startTimestamp != undefined) {
+      // 30,000ms event function Execution MaxLimit of Pylon
+      let taskExecTime = Date.now() - startTimestamp!;
+      /*console.log(
+        'Task Checking for DAILY_TASK_RUNNING taskExecTime:' + taskExecTime
+      );*/
+      if (taskExecTime < 31000) {
+        //console.log('Task Statues : DAILY_TASK_RUNNING ');
+        return resolve(DAILY_TASK_RUNNING);
+      }
+    }
+
+    if (val == undefined) {
+      //console.log('Task Statues : DAILY_TASK_FAILED');
+      return resolve(DAILY_TASK_FAILED);
+    } else if (val == '1') {
+      //console.log('Task Statues : DAILY_TASK_SUCCESSFUL');
+      return resolve(DAILY_TASK_SUCCESSFUL);
+    }
+  });
+}
+
+let lastUserInteraction: number = 0;
+
+// will return True -> To block user interaction (Internal data is inconsistent like dailyLB not reset)
+async function userInteraction(
+  message: discord.GuildMemberMessage
+): Promise<Boolean> {
+  /*console.log(
+    'Last Interaction: ' + (Date.now() - lastUserInteraction).toString()
+  );*/
+
+  if (Date.now() - lastUserInteraction < 700) {
+    lastUserInteraction = Date.now();
+    return new Promise<Boolean>((rs, rj) => rs(true)); // 700ms Spam protection
+  }
+  lastUserInteraction = Date.now();
+
+  return new Promise<Boolean>(async (resolve, reject) => {
+    try {
+      let status = await getDailyResetTaskStatus();
+      if (status == DAILY_TASK_FAILED) {
+        await message.reply(
+          'Its detected that the DailyStudyHours and/or DailyLeaderboard are not reset properly today. Initiated DailyReset. Please use the command after 2mins.' +
+            message.author.toMention()
+        );
+        resolve(true);
+        let ret = await checkAndRestartDailyResetTask(
+          'DailyReset initiated by member: ' + message.author.toMention()
+        );
+      } else if (status == DAILY_TASK_RUNNING) {
+        await message.reply(
+          'DailyStudyHours and/or DailyLeaderboard are being reset. Please use the command after 2mins.' +
+            message.author.toMention()
+        );
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    } catch (err) {
+      handleError(err);
+    }
+  });
+}
+
+// will retrun true -> if dailyResetTask previous failed to run successfully and task is re-run
+async function checkAndRestartDailyResetTask(
+  extraInfo: string,
+  log: Boolean = false
+): Promise<Boolean> {
+  return new Promise<Boolean>(async (resolve, reject) => {
+    let loginfochannel = await discord.getGuildTextChannel(loginfoChannelID);
+    try {
+      let status = await getDailyResetTaskStatus();
+      if (status == DAILY_TASK_FAILED) {
+        await loginfochannel!.sendMessage(
+          '@here DailyReset Task failed - restarting DailyReset Task. Info: ' +
+            extraInfo
+        );
+        await cron_task();
+        resolve(true);
+      } else if (status == DAILY_TASK_RUNNING) {
+        await loginfochannel!.sendMessage(
+          'DailyReset Task is running. Info: ' + extraInfo
+        );
+        resolve(true);
+      } else {
+        if (log) {
+          await loginfochannel!.sendMessage(
+            'DailyReset Task successful - skipping restarting DailyReset Task. Info: ' +
+              extraInfo
+          );
+        }
+        resolve(false);
+      }
+    } catch (err) {
+      handleError(err, loginfochannel);
+    }
+  });
+}
