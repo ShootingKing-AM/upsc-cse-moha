@@ -1,6 +1,6 @@
 import * as betterKV from './betterKV';
 
-let topMessageIDArray = ['915332272553590795', '915332252081197128'];
+let topMessageIDArray = ['927190278853513216', '927190300424810537'];
 
 let loginfoChannelID = '850411914815471639';
 let topMessageChannelID = loginfoChannelID; // Same as Log-Info Channel
@@ -34,6 +34,8 @@ let arrHoursLevels = [
   [660, '863891395075768341'], //Sage 660-720h
   [720, '863892888180883467'] //Grand Sage, 720h+
 ];
+
+let modRole = '927187026804092948';
 
 // SK Test Server roles
 /*let arrHoursLevels = [
@@ -79,7 +81,10 @@ const userCommands = new discord.command.CommandGroup({
 const adminCommands = new discord.command.CommandGroup({
   filters: discord.command.filters.and(
     discord.command.filters.isChannelId(loginfoChannelID),
-    discord.command.filters.isAdministrator()
+    discord.command.filters.or(
+      discord.command.filters.isAdministrator(),
+      discord.command.filters.hasRole(modRole)
+    )
   ),
   defaultPrefix: defaultPrefix // You can customize your default prefix here.
 });
