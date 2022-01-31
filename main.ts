@@ -36,7 +36,7 @@ let arrHoursLevels = [
   [720, '863892888180883467'] //Grand Sage, 720h+
 ];
 
-let modRole = '927187026804092948';
+let modRole = '927187026804092948'; // MohaManager Role on UPSC Server
 
 // SK Test Server roles
 /*let arrHoursLevels = [
@@ -69,6 +69,7 @@ let sendPictureTopTen = true;
  *  loadbackup <DBJson> - will add/updates all DBJson values into database
  *  removelevelroles - will remove all level roles from all members
  *  settopmsgids <alltime_msgid> <today_msgid> - will set message ids for all_time and today TOP list in a discord message
+ *  deletealltimedata - Deletes all study time data from bot db - Be Extra carefull while using this command (thats why the cmd name is also KEPT long)
  */
 
 // Here's an example of how to use the built in command handler.
@@ -551,6 +552,21 @@ async function setTotalHrs(
     await updateTopMessage(userObj.id, todaytime.toFixed(2), TODAY_DATA_INDEX);
   }
 }
+
+// deletealltimedata
+adminCommands.raw('deletealltimedata', async (message) => {
+  try {
+    if (
+      (await betterKV.clear('TempTimes'))! &&
+      (await betterKV.clear('TotalTimes'))!
+    )
+      await message.reply(
+        `Sucessfully deleted all StudyTime data by ${message.author.toMention()}`
+      );
+  } catch (error) {
+    await handleError(error);
+  }
+});
 
 // settopmsgids
 adminCommands.on(
