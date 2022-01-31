@@ -1,6 +1,6 @@
 import * as betterKV from './betterKV';
 
-let topMessageIDArray = ['927190278853513216', '927190300424810537'];
+let topMessageIDArray = ['927190278853513216', '927190300424810537']; // Default MessageID values
 
 let loginfoChannelID = '850411914815471639';
 let topMessageChannelID = loginfoChannelID; // Same as Log-Info Channel
@@ -15,6 +15,7 @@ let defaultPrefix = '$';
 
 let ALLTIME_DATA_INDEX = 0;
 let TODAY_DATA_INDEX = 1;
+let TopMsgIDsKeys = ['ALLTIME_TOP_MSGID', 'TODAY_TOP_MSGID'];
 
 // UPSC Roles
 let arrHoursLevels = [
@@ -67,6 +68,7 @@ let sendPictureTopTen = true;
  *  cleardbentry <dbKey> - Will delete the database Entry identified by dbKey
  *  loadbackup <DBJson> - will add/updates all DBJson values into database
  *  removelevelroles - will remove all level roles from all members
+ *  settopmsgids <alltime_msgid> <today_msgid> - will set message ids for all_time and today TOP list in a discord message
  */
 
 // Here's an example of how to use the built in command handler.
@@ -96,6 +98,19 @@ const modsCommands = new discord.command.CommandGroup({
   defaultPrefix: defaultPrefix // You can customize your default prefix here.
 });
 
+async function getTopMessageID(what: number): Promise<string> {
+  return new Promise<string>(async (resolve, reject) => {
+    if (!(await betterKV.exist(TopMsgIDsKeys[what], 'MohaAdmin')))
+      await betterKV.save(
+        TopMsgIDsKeys[what],
+        topMessageIDArray[what],
+        'MohaAdmin'
+      );
+
+    resolve((await betterKV.get<string>(TopMsgIDsKeys[what], 'MohaAdmin'))!);
+  });
+}
+
 async function updateTopMessage(
   userID: string,
   userHrs: string,
@@ -103,7 +118,7 @@ async function updateTopMessage(
 ) {
   const channel = await discord.getGuildTextChannel(topMessageChannelID);
   const topMessage = await channel?.getMessage(
-    topMessageIDArray[topMessageType]
+    await getTopMessageID(topMessageType)
   );
 
   //console.log('awaiting for Message ... got userHrs as ' + userHrs);
@@ -193,7 +208,7 @@ async function getUserPosition(
 ): Promise<number> {
   const channel = await discord.getGuildTextChannel(topMessageChannelID);
   const topMessage = await channel?.getMessage(
-    topMessageIDArray[topMessageType]
+    await getTopMessageID(topMessageType)
   );
 
   const jsonTop = JSON.parse(topMessage?.content!);
@@ -370,11 +385,11 @@ userCommands.on(
   async (message, { what }) => {
     if (await userInteraction(message)) return;
 
-    let topMessageID = topMessageIDArray[TODAY_DATA_INDEX];
+    let topMessageID = await getTopMessageID(TODAY_DATA_INDEX);
     let msg = '**LeaderBoard** (__Today__)\n\n';
 
     if (what != null) {
-      topMessageID = topMessageIDArray[ALLTIME_DATA_INDEX];
+      topMessageID = await getTopMessageID(ALLTIME_DATA_INDEX);
       msg = '**LeaderBoard** (__AllTime__)\n\n';
     }
 
@@ -537,6 +552,49 @@ async function setTotalHrs(
   }
 }
 
+// settopmsgids
+adminCommands.on(
+  'settopmsgids',
+  (args) => ({
+    alltime_msgid: args.string(),
+    today_msgid: args.string()
+  }),
+  async (message, { alltime_msgid, today_msgid }) => {
+    try {
+      if (alltime_msgid == null || today_msgid == null)
+        return await message.reply(
+          `Usage: ${defaultPrefix}settopmsgids <alltime_msgid> <today_msgid> - will set messageIDs for ALL_TIME_TOP and TODAY_TOP list in a discord message`
+        );
+
+      let origAll = await betterKV.get<string>(
+        TopMsgIDsKeys[ALLTIME_DATA_INDEX],
+        'MohaAdmin'
+      );
+      let origToday = await betterKV.get<string>(
+        TopMsgIDsKeys[TODAY_DATA_INDEX],
+        'MohaAdmin'
+      );
+
+      await betterKV.save(
+        TopMsgIDsKeys[TODAY_DATA_INDEX],
+        today_msgid,
+        'MohaAdmin'
+      );
+      await betterKV.save(
+        TopMsgIDsKeys[ALLTIME_DATA_INDEX],
+        alltime_msgid,
+        'MohaAdmin'
+      );
+
+      return await message.reply(
+        `Sucessfully set **ALLTIME**_TOP_MSGID to \`${alltime_msgid}\`(from \`${origAll}\`) and **TODAY**_TOP_MSGID to \`${today_msgid}\`(from \`${origToday}\`) by ${message.author.toMention()}`
+      );
+    } catch (error) {
+      await handleError(error);
+    }
+  }
+);
+
 // setthrs
 adminCommands.on(
   'setthrs',
@@ -680,7 +738,7 @@ async function sendTopPicToChannel(
   what: number
 ) {
   await replyChannel.triggerTypingIndicator();
-  let topMessageID = topMessageIDArray[what];
+  let topMessageID = await getTopMessageID(what);
   //let msg = '**LeaderBoard** (__Today__)\n\n';
 
   /*if (what != null) {
@@ -1425,12 +1483,14 @@ async function autoBackup(allEntries: any) {
     );
 
     let topMessage = await channel?.getMessage(
-      topMessageIDArray[TODAY_DATA_INDEX]
+      await getTopMessageID(TODAY_DATA_INDEX)
     );
     await testVar(
       topMessage,
       loginfochannel!,
-      `Error: channel?.getMessage('${topMessageIDArray[TODAY_DATA_INDEX]}') returned topMessage = `
+      `Error: channel?.getMessage('${await getTopMessageID(
+        TODAY_DATA_INDEX
+      )}') returned topMessage = `
     );
 
     const dataTodayTop = topMessage?.content!;
@@ -1441,12 +1501,14 @@ async function autoBackup(allEntries: any) {
     );
 
     topMessage = await channel?.getMessage(
-      topMessageIDArray[ALLTIME_DATA_INDEX]
+      await getTopMessageID(ALLTIME_DATA_INDEX)
     );
     await testVar(
       topMessage,
       loginfochannel!,
-      `Error: channel?.getMessage('${topMessageIDArray[ALLTIME_DATA_INDEX]}') returned topMessage = `
+      `Error: channel?.getMessage('${await getTopMessageID(
+        ALLTIME_DATA_INDEX
+      )}') returned topMessage = `
     );
 
     const dataAllTimeTop = topMessage?.content!;
@@ -1506,7 +1568,7 @@ async function testVar(
 }
 
 async function cron_task() {
-  let topMessageID = topMessageIDArray[TODAY_DATA_INDEX];
+  let topMessageID = await getTopMessageID(TODAY_DATA_INDEX);
   let msg = "*yesterday's* **LeaderBoard** \n\n";
   let logmsg = "*yesterday's* **LeaderBoard** \n\n";
 
