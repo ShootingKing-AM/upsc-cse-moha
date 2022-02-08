@@ -11,6 +11,8 @@ let channelToSwitch = '770632381598138431'; // Silent-self-study channel | Chann
 let channelCategoriesToWatch = ['874359220181536849', '910598376893063188']; // All Study Over Cam/SS Channels category
 let channelCategoriesCamSSOnlyToWatchCheck = ['874359220181536849']; // Study Over Cam/SS ONLY categories - for AFK Check; will be moved if not using Cam /SS
 
+let leaderboardchannel = '940621960768004106'; // Channel to send daily Leaderboard top messages to
+
 let defaultPrefix = '$';
 
 let ALLTIME_DATA_INDEX = 0;
@@ -1611,11 +1613,13 @@ async function cron_task() {
 
     const jsonTop = JSON.parse(topMessage?.content!);
 
-    let memberinfochannel = await discord.getGuildTextChannel(channelId);
+    let memberinfochannel = await discord.getGuildTextChannel(
+      leaderboardchannel
+    );
     await testVar(
       memberinfochannel,
       loginfochannel!,
-      `Error: discord.getGuildTextChannel('${channelId}') returned memberinfochannel = `
+      `Error: discord.getGuildTextChannel('${leaderboardchannel}') returned memberinfochannel = `
     );
 
     let i = 1;
