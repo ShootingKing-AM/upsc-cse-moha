@@ -80,7 +80,7 @@ const userCommands = new discord.command.CommandGroup({
     discord.command.filters.isChannelId(channelId),
     discord.command.filters.isChannelId(loginfoChannelID)
   ),
-  defaultPrefix: defaultPrefix // You can customize your default prefix here.
+  defaultPrefix: defaultPrefix, // You can customize your default prefix here.
 });
 
 const adminCommands = new discord.command.CommandGroup({
@@ -91,14 +91,14 @@ const adminCommands = new discord.command.CommandGroup({
       discord.command.filters.hasRole(modRole)
     )
   ),
-  defaultPrefix: defaultPrefix // You can customize your default prefix here.
+  defaultPrefix: defaultPrefix, // You can customize your default prefix here.
 });
 
 const modsCommands = new discord.command.CommandGroup({
   filters: discord.command.filters.and(
     discord.command.filters.isChannelId(loginfoChannelID)
   ),
-  defaultPrefix: defaultPrefix // You can customize your default prefix here.
+  defaultPrefix: defaultPrefix, // You can customize your default prefix here.
 });
 
 async function getTopMessageID(what: number): Promise<string> {
@@ -165,7 +165,7 @@ async function updateTopMessage(
     sortable.push([key, jsonTop[key]]);
   }
 
-  sortable.sort(function(a, b) {
+  sortable.sort(function (a, b) {
     return b[1] - a[1];
   });
 
@@ -233,7 +233,7 @@ async function getUserPosition(
     sortable.push([key, jsonTop[key]]);
   }
 
-  sortable.sort(function(a, b) {
+  sortable.sort(function (a, b) {
     return b[1] - a[1];
   });
 
@@ -259,7 +259,7 @@ let rankEmojis = [
   ':six:',
   ':seven:',
   ':eight:',
-  ':nine:'
+  ':nine:',
 ];
 
 function getRankEmoji(rank: number): string {
@@ -329,7 +329,7 @@ async function showUserIDTotalTime(
         new discord.Embed({
           title: ':chart_with_upwards_trend:  Personal Information',
           thumbnail: {
-            url: userObj.getAvatarUrl()
+            url: userObj.getAvatarUrl(),
           },
           color: ((1 << 24) * Math.random()) | 0,
           description:
@@ -354,8 +354,8 @@ async function showUserIDTotalTime(
             '\n',
           footer: {
             iconUrl: guild.getIconUrl()!,
-            text: 'Type `' + defaultPrefix + 'lb` to see the leaderboard'
-          }
+            text: 'Type `' + defaultPrefix + 'lb` to see the leaderboard',
+          },
         })
       );
     }
@@ -370,7 +370,7 @@ async function showUserIDTotalTime(
 userCommands.on(
   'info',
   (args) => ({
-    user: args.userOptional()
+    user: args.userOptional(),
   }),
   async (message, { user }) => {
     if (await userInteraction(message)) return;
@@ -381,6 +381,68 @@ userCommands.on(
     }
   }
 );
+
+async function updateStickyTodayLB(
+  channelToSend:
+    | discord.GuildTextChannel
+    | discord.GuildNewsChannel
+    | discord.DmChannel
+) {
+  try {
+    let msgid = await betterKV.get<string>('STICKY_MSGID', 'MohaAdmin');
+
+    if (msgid != undefined && msgid.length > 1) {
+      await (await channelToSend.getMessage(msgid))?.delete();
+      await betterKV.save('STICKY_MSGID', '', 'MohaAdmin');
+    }
+    let reply = await channelToSend.sendMessage(await makeTodayLBText());
+    await betterKV.save('STICKY_MSGID', reply.id, 'MohaAdmin');
+  } catch (e) {
+    await handleError(e);
+  }
+}
+
+discord.on('MESSAGE_CREATE', async (message) => {
+  try {
+    if (message.channelId == channelId)
+      await updateStickyTodayLB(await message.getChannel());
+  } catch (e) {
+    await handleError(e);
+  }
+});
+
+async function makeTodayLBText(): Promise<string> {
+  return new Promise<string>(async (resolve) => {
+    try {
+      let topMessageID = await getTopMessageID(TODAY_DATA_INDEX);
+      let msg = ':pushpin: **LeaderBoard** (__Today__)\n\n';
+
+      const channel = await discord.getGuildTextChannel(topMessageChannelID);
+      const topMessage = await channel?.getMessage(topMessageID);
+      const jsonTop = JSON.parse(topMessage?.content!);
+
+      let i = 1;
+
+      for (let key in jsonTop) {
+        const u = await discord.getUser(key);
+        msg +=
+          i +
+          '. ' +
+          `\`${u?.username}#${u?.discriminator}\` (${jsonTop[key]} hrs)\n`;
+        i++;
+      }
+
+      if (i > 1) resolve(msg);
+      else {
+        resolve(
+          "Today's Leaderboard is empty, Be the first one to start studing and get on it !! :)"
+        );
+      }
+    } catch (e) {
+      await handleError(e);
+    }
+  });
+}
 
 userCommands.on(
   'lb',
@@ -394,7 +456,9 @@ userCommands.on(
     if (what != null) {
       topMessageID = await getTopMessageID(ALLTIME_DATA_INDEX);
       msg = '**LeaderBoard** (__AllTime__)\n\n';
-    }
+    } /*else {
+      await updateStickyTodayLB(await message.getChannel());
+    }*/
 
     //let topMessageChannelID = '850411914815471639';
     const channel = await discord.getGuildTextChannel(topMessageChannelID);
@@ -575,7 +639,7 @@ adminCommands.on(
   'settopmsgids',
   (args) => ({
     alltime_msgid: args.string(),
-    today_msgid: args.string()
+    today_msgid: args.string(),
   }),
   async (message, { alltime_msgid, today_msgid }) => {
     try {
@@ -619,7 +683,7 @@ adminCommands.on(
   (args) => ({
     user: args.user(),
     allTime: args.number(),
-    todayTime: args.number()
+    todayTime: args.number(),
   }),
   async (message, { user, allTime, todayTime }) => {
     if (message.member.user.id != '317716017931485195') return;
@@ -706,7 +770,7 @@ adminCommands.raw('removelevelroles', async (message) => {
                   '> stripped of his role <@&' +
                   arrHoursLevels[levelrole][1] +
                   '>',
-                allowedMentions: {}
+                allowedMentions: {},
               });
               profiledUsersNo++;
               break;
@@ -746,7 +810,7 @@ adminCommands.raw('removelevelroles', async (message) => {
         '`'
     );
   } catch (err) {
-    handleError(err, loginfochannel);
+    await handleError(err, loginfochannel);
   }
 });
 
@@ -778,15 +842,13 @@ async function sendTopPicToChannel(
         `\`${u?.username}#${u?.discriminator}\` (${jsonTop[key]} hrs)\n`;*/
     top[i] = {
       value: jsonTop[key],
-      tag:
-        u?.getTag() ||
-        'unknown#0000' /*,
+      tag: u?.getTag() || 'unknown#0000' /*,
             level: xpToLevel(entry.value as number),
             next: levelToXp(xpToLevel(entry.value as number) + 1),
             prev: levelToXp(xpToLevel(entry.value as number) - 1),
             avatar:
               user?.getAvatarUrl() ||
-              'https://cdn.discordapp.com/embed/avatars/1.png'*/
+              'https://cdn.discordapp.com/embed/avatars/1.png'*/,
     };
     i++;
     if (i > 9) break;
@@ -846,14 +908,14 @@ return eimage.composite(new Image(mTWidth+fillHXCent*imgSizeX, fillHYCent*imgSiz
       code,
       inject: {
         //seed: randomBetween(10, 50),
-        top: JSON.stringify(top)
-      }
+        top: JSON.stringify(top),
+      },
     }),
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Application 5f7a2a7297aadf69252889f6dc52da84`
+      Authorization: `Application 5f7a2a7297aadf69252889f6dc52da84`,
     },
-    method: 'POST'
+    method: 'POST',
   });
 
   //let log = '';
@@ -866,9 +928,9 @@ return eimage.composite(new Image(mTWidth+fillHXCent*imgSizeX, fillHYCent*imgSiz
     attachments: [
       {
         name: 'top.png',
-        data: await request.arrayBuffer()
-      }
-    ]
+        data: await request.arrayBuffer(),
+      },
+    ],
   });
 
   /*new discord.Embed({
@@ -907,7 +969,7 @@ adminCommands.raw('runabackup', async (message) => {
 adminCommands.on(
   'cleardbentry',
   (args) => ({
-    key: args.text()
+    key: args.text(),
   }),
   async (message, { key }) => {
     let exits = await betterKV.exist(key, 'TotalTimes');
@@ -924,7 +986,7 @@ adminCommands.on(
 adminCommands.on(
   'loadbackup',
   (args) => ({
-    json: args.text()
+    json: args.text(),
   }),
   async (message, { json }) => {
     const data = JSON.parse(json);
@@ -1065,7 +1127,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
         ) {
           //console.log('test 1');
           (memeber as discord.GuildMember)!.edit({
-            channelId: channelToSwitch
+            channelId: channelToSwitch,
           });
 
           let channelName = await (guild as discord.Guild)!
@@ -1073,13 +1135,17 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             .then((c) => c!.name);
 
           await memberinfochannel!.sendMessage(
-            `${(memeber as discord.GuildMember).toMention()} has been moved to :speaker: \`${channelName}\` for not using Cam or ScreenShare.`
+            `${(
+              memeber as discord.GuildMember
+            ).toMention()} has been moved to :speaker: \`${channelName}\` for not using Cam or ScreenShare.`
           );
           await loginfochannel!.sendMessage({
-            content: `${(memeber as discord.GuildMember).toMention()}(\`${(memeber as discord.GuildMember).user.getTag()}\`) (\`${
+            content: `${(memeber as discord.GuildMember).toMention()}(\`${(
+              memeber as discord.GuildMember
+            ).user.getTag()}\`) (\`${
               (memeber as discord.GuildMember).user.id
             }\`) has been moved to :speaker: \`${channelName}\` for not using Cam or ScreenShare.`,
-            allowedMentions: {}
+            allowedMentions: {},
           });
         }
       },
@@ -1110,8 +1176,9 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
       //console.log(tsJoined);
       await betterKV.del(newState.member.user.id, 'TempTimes');
 
-      let sztsTimeSessionSpent = (((Date.now() - parseInt(tsJoined)) /
-        (1000 * 60 * 60)) as number).toFixed(2);
+      let sztsTimeSessionSpent = (
+        ((Date.now() - parseInt(tsJoined)) / (1000 * 60 * 60)) as number
+      ).toFixed(2);
 
       if (isNaN(parseFloat(sztsTimeSessionSpent))) {
         await loginfochannel?.sendMessage(
@@ -1295,7 +1362,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
           ' and *Today*: ' +
           totalTodayTime +
           ' `hrs`',
-        allowedMentions: {}
+        allowedMentions: {},
       });
 
       await memberinfochannel?.sendMessage({
@@ -1307,8 +1374,10 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
           ' and *Today*: ' +
           totalTodayTime +
           ' `hrs`',
-        allowedMentions: {}
+        allowedMentions: {},
       });
+
+      await updateStickyTodayLB(memberinfochannel!);
     }
   }
 
@@ -1333,7 +1402,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
         }) ${newState.member.user.toMention()} has started studying in :speaker: <#${
           newState.channelId
         }> \`${vcName}\` :smirk_cat: @ ` + Date.now(), //joined the voice channel
-      allowedMentions: {}
+      allowedMentions: {},
     });
     await memberinfochannel?.sendMessage(
       `\`${newState.member.user.username}#${newState.member.user.discriminator}\` has started studying in <#${newState.channelId}> :smirk_cat: ` //joined the voice channel
@@ -1407,7 +1476,7 @@ async function updateLevel(
               `**(${toRole?.toMention()}) from Level: ` +
               fromRole?.name +
               ` (${fromRole?.toMention()})`,
-            allowedMentions: {}
+            allowedMentions: {},
           });
           await loginfochannel.sendMessage(
             `\`${userObj.user.getTag()}\`(${
@@ -1447,7 +1516,7 @@ async function updateLevel(
         `\`${userObj.user.getTag()}\` has ranked up to Level: **` +
         toRole?.name +
         `** (${toRole?.toMention()})`,
-      allowedMentions: {}
+      allowedMentions: {},
     });
     await loginfochannel.sendMessage({
       content:
@@ -1456,7 +1525,7 @@ async function updateLevel(
         }) ${userObj.toMention()} has ranked up to Level: **` +
         toRole?.name +
         `** (${toRole?.toMention()})`,
-      allowedMentions: {}
+      allowedMentions: {},
     });
   }
 }
@@ -1464,7 +1533,7 @@ async function updateLevel(
 adminCommands.on(
   'testlvl',
   (args) => ({
-    allTime: args.number()
+    allTime: args.number(),
   }),
   async (message, { allTime }) => {
     let loginfochannel = await discord.getGuildTextChannel(loginfoChannelID);
@@ -1564,12 +1633,12 @@ async function autoBackup(allEntries: any) {
       attachments: [
         {
           name: 'bakupdata.txt',
-          data: new TextEncoder().encode(jsonBackupString).buffer
-        }
-      ]
+          data: new TextEncoder().encode(jsonBackupString).buffer,
+        },
+      ],
     });
   } catch (error) {
-    handleError(error, loginfochannel);
+    await handleError(error, loginfochannel);
   }
 }
 
@@ -1656,7 +1725,7 @@ async function cron_task() {
     //await sleep(1200);
     await loginfochannel?.sendMessage({
       content: logmsg,
-      allowedMentions: {}
+      allowedMentions: {},
     });
 
     let allKeys = await betterKV.getEntries('TotalTimes');
@@ -1726,7 +1795,7 @@ async function cron_task() {
       "**Cron Task** Completed. Cleared Yesterday's Leaderboard."
     );
   } catch (error) {
-    handleError(error, loginfochannel);
+    await handleError(error, loginfochannel);
   }
 }
 
@@ -1835,7 +1904,7 @@ async function userInteraction(
         resolve(false);
       }
     } catch (err) {
-      handleError(err);
+      await handleError(err);
     }
   });
 }
@@ -1871,7 +1940,7 @@ async function checkAndRestartDailyResetTask(
         resolve(false);
       }
     } catch (err) {
-      handleError(err, loginfochannel);
+      await handleError(err, loginfochannel);
     }
   });
 }
