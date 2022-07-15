@@ -1189,9 +1189,26 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             ',\nsztsTimeSessionSpent:' +
             sztsTimeSessionSpent
         );
-        await memberinfochannel?.sendMessage(
-          `**Error** Occred in Saving: \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in <#${oldState.channelId}> :smiling_face_with_tear:. Please contact Mods.` //has left the voice channel
-        );
+        if (tsJoined == undefined) {
+          await memberinfochannel?.sendMessage(
+            `**Error** Occred in Saving: \`${newState.member.user.username}#${
+              newState.member.user.discriminator
+            }\` has stopped studying in <#${
+              oldState.channelId
+            }> :smiling_face_with_tear:. Study session stopped at \`${new Date().toLocaleString(
+              undefined,
+              {
+                timeZone: 'Asia/Kolkata',
+                dateStyle: 'long',
+                timeStyle: 'long',
+              }
+            )}\` and started at \`unknown\`.\nPlease contact Mods.` //has left the voice channel
+          );
+        } else {
+          await memberinfochannel?.sendMessage(
+            `**Error** Occred in Saving: \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in <#${oldState.channelId}> :smiling_face_with_tear:. Please contact Mods.` //has left the voice channel
+          );
+        }
         return;
       }
 
@@ -1407,6 +1424,56 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
     await memberinfochannel?.sendMessage(
       `\`${newState.member.user.username}#${newState.member.user.discriminator}\` has started studying in <#${newState.channelId}> :smirk_cat: ` //joined the voice channel
     );
+
+    let tsJoined = await betterKV.get<string>(
+      newState.member.user.id,
+      'TempTimes'
+    );
+
+    if (tsJoined != undefined) {
+      let sztsTimeSessionSpent = (
+        ((Date.now() - parseInt(tsJoined)) / (1000 * 60 * 60)) as number
+      ).toFixed(2);
+
+      let szExtTimeSpent = '';
+      let flAdjTimeSpent = parseFloat(sztsTimeSessionSpent);
+      if (flAdjTimeSpent > 1.0) {
+        szExtTimeSpent +=
+          Math.floor(flAdjTimeSpent) +
+          (Math.floor(flAdjTimeSpent) >= 2 ? ' `hrs` ' : ' `hr` ');
+      }
+
+      let mins = (flAdjTimeSpent - Math.floor(flAdjTimeSpent)) * 60;
+      szExtTimeSpent += mins.toFixed(1) + (mins >= 2 ? ' `mins`' : ' `min`');
+
+      await loginfochannel?.sendMessage(
+        `**Inconsistency** in database records: \`${newState.member.user.username}#${newState.member.user.discriminator}\` has started studying in :speaker:<#${newState.channelId}> \`${vcName}\` but the previous session started @${tsJoined} seems not added to studyTime :smiling_face_with_tear: ` + //has left the voice channel
+          Date.now() +
+          ',\ntsJoined:' +
+          tsJoined +
+          ',\n'
+      );
+      await memberinfochannel?.sendMessage(
+        `**Inconsistency** in database records detected for \`${
+          newState.member.user.username
+        }#${
+          newState.member.user.discriminator
+        }\` for previous study session which started at \`${new Date(
+          parseInt(tsJoined)
+        ).toLocaleString(undefined, {
+          timeZone: 'Asia/Kolkata',
+          dateStyle: 'long',
+          timeStyle: 'long',
+        })}\` and ended at \`unknown\` but before \`${new Date().toLocaleString(
+          undefined,
+          {
+            timeZone: 'Asia/Kolkata',
+            dateStyle: 'long',
+            timeStyle: 'long',
+          }
+        )}\` seems not added to studyTime :smiling_face_with_tear:.\nMax Time Inconsistency: ${szExtTimeSpent}. Please contact Mods.\nTrying to properly track present study session :white_check_mark:` //has left the voice channel
+      );
+    }
 
     await betterKV.del(newState.member.user.id, 'TempTimes');
     // TempTimes Namespace- Saves times for when the user is just connected to Voice Channel; For Later TimeSpent Calculation
