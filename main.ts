@@ -38,6 +38,42 @@ let arrHoursLevels = [
   [720, '863892888180883467'] //Grand Sage, 720h+
 ];
 
+let VoteRoles = [
+  // Roles who can vote to scrutinize !addhrs cmd
+  '857502270535368725', //Learner;
+  '857502562956738560', //Ambitious;
+  '857502927634432041', //Momentous;
+  '857503167982075924', //Studious ;
+  '857503357304045568', //A+ Student
+  '857503593296298015', //Scholar
+  '857504034969747456', //Guru
+  '857504345644990474', //Study Master
+  '857505019985395732', //Study Lord
+  '863889975753834516', //Noble 500-580h
+  '863892097375272970', //Savant -660h
+  '863891395075768341', //Sage 660-720h
+  '863892888180883467', //Grand Sage, 720h+
+  '785381822405935105', //Supporters
+  '940804449876729927', //Community Pillars
+
+  // TEST ROLES:
+  '857696219971059723', // Spark -- Level 1;
+  '857696370197659688', // Beginner -- Level 2;
+  '857696421158584340', // Learner -- Level 3;
+];
+
+let pVoteRoles = [
+  // Permanant voters - whos vote is final and binding
+  '814018550942924860', // Moderators
+  '927187026804092948', // MoHA Manger
+  '881487350704791552', // Sr. Moderator
+  '767615532563431424', // Manager
+  '767015774266851378', // Admin
+
+  // TEST ROLES:
+  '842030013801037855', // Pylon Administrator
+];
+
 let modRole = '927187026804092948'; // MohaManager Role on UPSC Server
 
 // SK Test Server roles
@@ -534,6 +570,8 @@ async function setTotalHrs(
   message: discord.Message,
   userObj: discord.User
 ) {
+  if (isNaN(time) || isNaN(todaytime)) return;
+
   let exits = await betterKV.exist(userObj.id, 'TotalTimes');
 
   if (exits) {
@@ -542,8 +580,10 @@ async function setTotalHrs(
       //New DataScheme {altime, today}
       let origTimeArray = origTime.split(',');
 
-      await message.reply(
-        `\`${userObj.username}#${userObj.discriminator}\`'s Total time has been modified from \`` +
+      await message.inlineReply(
+        `${userObj.toMention()} \`${userObj.username}#${
+          userObj.discriminator
+        }\`'s Total time has been modified from \`` +
           origTimeArray[ALLTIME_DATA_INDEX] +
           ':' +
           origTimeArray[TODAY_DATA_INDEX] +
@@ -551,7 +591,9 @@ async function setTotalHrs(
           (time < 0 ? origTimeArray[ALLTIME_DATA_INDEX] : time.toFixed(2)) +
           ':' +
           todaytime.toFixed(2) +
-          `\` hrs by ${message.member?.user.toMention()}`
+          `\` hrs by ${
+            message.member ? message.member?.user.toMention() : 'server.'
+          }`
       );
       await betterKV.save(
         userObj.id,
@@ -573,14 +615,16 @@ async function setTotalHrs(
     } else {
       //Old DataScheme 'altime', Convert
 
-      await message.reply(
-        `\`${userObj.username}#${userObj.discriminator}\`'s Total time has been modified from \`` +
+      await message.inlineReply(
+        `${userObj.toMention} \`${userObj.username}#${userObj.discriminator}\`'s Total time has been modified from \`` +
           origTime +
           '` to `' +
           (time < 0 ? todaytime.toFixed(2) : time.toFixed(2)) +
           ':' +
           todaytime.toFixed(2) +
-          `\` hrs by ${message.member?.user.toMention()}`
+          `\` hrs by ${
+            message.member ? message.member?.user.toMention() : 'server.'
+          }`
       );
 
       await betterKV.save(
@@ -602,7 +646,7 @@ async function setTotalHrs(
       );
     }
   } else {
-    await message.reply(
+    await message.inlineReply(
       `\`${userObj.username}#${userObj.discriminator}\`'s Total time has been modified from \`null\` to ` +
         time.toFixed(2) +
         '(oldDataScheme) to' +
@@ -624,7 +668,8 @@ adminCommands.raw('deletealltimedata', async (message) => {
   try {
     if (
       (await betterKV.clear('TempTimes'))! &&
-      (await betterKV.clear('TotalTimes'))!
+      (await betterKV.clear('TotalTimes'))! &&
+      (await betterKV.clear('HrsWatchVotes'))!
     )
       await message.reply(
         `Sucessfully deleted all StudyTime data by ${message.author.toMention()}`
@@ -677,6 +722,401 @@ adminCommands.on(
   }
 );
 
+function userHasRole(userRoles: any, rolestoCheck: any) {
+  for (let userRole in userRoles) {
+    for (let testRole in rolestoCheck) {
+      if (userRoles[userRole] == rolestoCheck[testRole]) {
+        return userRoles[userRole];
+      }
+    }
+  }
+  return false;
+}
+
+// addmins
+userCommands.on(
+  'addmins',
+  (args) => ({
+    Minutes: args.number(),
+    reason: args.text(),
+    //user: args.userOptional(),
+  }),
+  async (message, { /*user,*/ Minutes, /*addTime,*/ reason }) => {
+    try {
+      let addToUser = message.author;
+      //if (user != null) addToUser = user;
+
+      let newTotalTime: number, newTodayTime: number;
+      let origTimearray = ['0.0', '0.0'];
+
+      let exits = await betterKV.exist(addToUser.id, 'TotalTimes');
+      if (exits) {
+        origTimearray = (await betterKV.get<string>(
+          addToUser.id,
+          'TotalTimes'
+        ))!.split(',');
+      }
+
+      let addTime = parseFloat((Minutes / 60).toFixed(2));
+
+      newTodayTime = parseFloat(
+        (parseFloat(origTimearray[TODAY_DATA_INDEX]) + addTime).toFixed(2)
+      );
+      newTotalTime = parseFloat(
+        (parseFloat(origTimearray[ALLTIME_DATA_INDEX]) + addTime).toFixed(2)
+      );
+
+      await setTotalHrs(newTotalTime, newTodayTime, message, addToUser);
+
+      /*await message.inlineReply(
+      `Sorry for the inconvinience. Added the requested hours.\nReporter: ${message.author.toMention()} \`(${
+        message.author.username
+      }#${message.author.discriminator})(${
+        message.author.id
+      })\`\nAdded to user: ${addToUser.toMention()} \`(${addToUser.username}#${
+        addToUser.discriminator
+      })(${addToUser.id})\`\nInitial Total hrs: \`${
+        origTimearray[TODAY_DATA_INDEX]
+      }\`\nInitial Today hrs: \`${
+        origTimearray[ALLTIME_DATA_INDEX]
+      }\`\nHrs Added: ${addTime}\nReason: \`${reason}`
+    );*/
+
+      // NOTE: Editing this needs line 813 to be redone.
+      let msgsent = await message.inlineReply(
+        `Sorry for the inconvinience if I missed it :pleading_face:. Added the requested hours.\nAdded to user: ${addToUser.toMention()} \`(${
+          addToUser.username
+        }#${addToUser.discriminator})(${
+          addToUser.id
+        })\`\nInitial Total hrs: \`${
+          origTimearray[TODAY_DATA_INDEX]
+        }\`\nInitial Today hrs: \`${
+          origTimearray[ALLTIME_DATA_INDEX]
+        }\`\nHrs Added: \`${addTime}\`\nReason: \`${reason}\``
+      );
+
+      await msgsent.addReaction('⬆️');
+      await msgsent.addReaction('⬇️');
+      await betterKV.save(msgsent.id, Date.now(), 'HrsWatchVotes');
+    } catch (e) {
+      await handleError(e);
+    }
+  }
+);
+
+discord.on('MESSAGE_REACTION_ADD', reThinkTimeAddedRAdded);
+discord.on('MESSAGE_REACTION_REMOVE', reThinkTimeAddedRRemoved);
+//discord.on('MESSAGE_REACTION_REMOVE_ALL', reThinkTimeAdded);
+
+async function reThinkTimeAddedRAdded(
+  message: discord.Event.IMessageReactionRemove
+) {
+  await reThinkTimeAddedCommon(message, true);
+}
+
+async function reThinkTimeAddedRRemoved(
+  message: discord.Event.IMessageReactionRemove
+) {
+  await reThinkTimeAddedCommon(message, false);
+}
+
+async function reThinkTimeAddedCommon(
+  message: discord.Event.IMessageReactionRemove,
+  radded: boolean
+) {
+  try {
+    if (message.emoji.name != '⬆️' && message.emoji.name != '⬇️') return;
+
+    let timeaddedTS = await betterKV.get<string>(
+      message.messageId,
+      'HrsWatchVotes'
+    );
+    if (timeaddedTS == undefined) return;
+
+    //console.log(Date.now() - parseInt(timeaddedTS));
+
+    if (Date.now() - parseInt(timeaddedTS) > 3 * 24 * 60 * 60 * 1000) {
+      await modlog(
+        `Info: \`${message.member!.user.username}#${
+          message.member!.user.discriminator
+        } (${message.userId})\` tried to ${radded ? 'vote' : 'remove vote'} ${
+          message.emoji.name
+        } on an >3 Days older request now. Deleting related \`HrsWatchVotes\` for msgid=\`${
+          message.messageId
+        }\` with ts=\`${timeaddedTS}\` now @ \`${Date.now()}\`.`
+      );
+      await betterKV.del(message.messageId, 'HrsWatchVotes');
+      return;
+    }
+
+    let channel = await discord.getGuildTextChannel(message.channelId);
+    let actMsg = await channel!.getMessage(message.messageId);
+
+    let isPVoter = userHasRole(message.member!.roles, pVoteRoles);
+    let voterRole = userHasRole(message.member!.roles, VoteRoles);
+
+    if (!voterRole && !isPVoter) {
+      await actMsg!.deleteReaction(message.emoji.name, message.member!.user);
+      return;
+    }
+
+    //console.log(message);
+    /*
+    Object {guildId: "823944652850987008", member: GuildMember, emoji: Emoji, userId: "317716017931485195", channelId: "848836989700407316"…}
+    guildId: "823944652850987008"
+    member: GuildMember
+      permissions: 2147483647
+      communicationDisabledUntil: null
+      user: User
+      joinedAt: "2021-03-23T15:41:53.395Z"
+      guildId: "823944652850987008"
+      pending: false
+      <constructor>: "GuildMember"
+      nick: null
+      roles: Array[4]
+      premiumSince: null
+    emoji: Emoji
+      id: null
+      roles: Array[0]
+      managed: false
+      animated: false
+      name: "🥰"
+      user: null
+      requireColons: false
+      type: "UNICODE"
+      <constructor>: "Emoji"
+        name: "Emoji"
+    userId: "317716017931485195"
+    channelId: "848836989700407316"
+    messageId: "997572679001448569"
+  */
+    //console.log(actMsg!.reactions.flat());
+    /*
+    [Object, Object, Object]
+    0: Object
+      emoji: Object
+      id: null
+      name: "⬆️"
+      count: 2
+      me: true
+    1: Object
+      emoji: Object
+      id: null
+      name: "⬇️"
+      count: 2
+      me: true
+    2: Object
+      emoji: Object
+      id: null
+      name: "🥰"
+      count: 1
+      me: false
+  */
+    let upvotes = 0,
+      downvotes = 0;
+
+    actMsg!.reactions.flat().forEach(function (currentValue, index, arr) {
+      if (currentValue.emoji.name == '⬆️') upvotes = currentValue.count;
+      if (currentValue.emoji.name == '⬇️') downvotes = currentValue.count;
+    });
+
+    //console.log(actMsg!.content);
+
+    if (
+      (upvotes > downvotes && !isPVoter) ||
+      (isPVoter && radded && message.emoji.name == '⬆️')
+    ) {
+      var matches = actMsg!.content.match(
+        /(Sorry for the inconvinience if I missed it :pleading_face:. Added the requested hours.\nAdded to user: <@(.*?)> .*\n.*\n.*\nHrs Added: )~~(.*?)~~(\n.*)/
+      );
+
+      let doNotModfiyTime = false;
+      if (matches == null && isPVoter) {
+        matches = actMsg!.content.match(
+          /(Sorry for the inconvinience if I missed it :pleading_face:. Added the requested hours.\nAdded to user: <@(.*?)> .*\n.*\n.*\nHrs Added: )`(.*?)`(\n.*)/
+        );
+        doNotModfiyTime = true;
+      }
+      //console.log(matches);
+
+      if (matches != null) {
+        var id = matches![2];
+        var hrsadded = parseFloat(matches![3]);
+        //console.log('Should add time for id=' + id + ' by hrsadded=' + hrsadded);
+
+        let addToUser = await discord.getUser(id);
+
+        await modlog({
+          content: `Voter \`${message.member!.user.username}#${
+            message.member!.user.discriminator
+          } (${
+            message.userId
+          })\` <@&${voterRole}> has actionably(regex found) ${
+            radded ? 'voted' : 'removed'
+          } ${message.emoji.name} on msgid=\`${
+            message.messageId
+          }\` in channelid=\`${
+            message.channelId
+          }\` \nUp:${upvotes}, Down:${downvotes} \nKV data for the same with TS=\`${timeaddedTS}\`, \nNow Should add time(doNotModfiyTime=\`${doNotModfiyTime}\`) for user=\`${
+            addToUser!.username
+          }#${addToUser!.discriminator} (${id})\` by hrs=\`${hrsadded}\` `,
+          allowedMentions: {},
+        });
+
+        let newTotalTime: number, newTodayTime: number;
+        let origTimearray = ['0.0', '0.0'];
+
+        let exits = await betterKV.exist(addToUser!.id, 'TotalTimes');
+        if (exits) {
+          origTimearray = (await betterKV.get<string>(
+            addToUser!.id,
+            'TotalTimes'
+          ))!.split(',');
+        }
+
+        newTodayTime = parseFloat(
+          (parseFloat(origTimearray[TODAY_DATA_INDEX]) + hrsadded).toFixed(2)
+        );
+        newTotalTime = parseFloat(
+          (parseFloat(origTimearray[ALLTIME_DATA_INDEX]) + hrsadded).toFixed(2)
+        );
+
+        if (!doNotModfiyTime)
+          await setTotalHrs(newTotalTime, newTodayTime, actMsg!, addToUser!);
+
+        if (!isNaN(hrsadded)) {
+          await actMsg!.edit(
+            matches![1] +
+              '`' +
+              hrsadded +
+              '`' +
+              matches![4] +
+              (isPVoter
+                ? `\nPermanently set by mod: \`${
+                    message.member!.user.username
+                  }#${message.member!.user.discriminator} (${
+                    message.member!.user.id
+                  })\``
+                : '')
+          );
+
+          if (isPVoter) {
+            await modlog({
+              content: `Permanent Voter \`${message.member!.user.username}#${
+                message.member!.user.discriminator
+              } (${message.userId})\` <@&${isPVoter}> has voted ${
+                message.emoji.name
+              } on msgid=\`${message.messageId}\` in channelid=\`${
+                message.channelId
+              }\` \nNow Removing KV data for the same with TS=\`${timeaddedTS}\`.`,
+              allowedMentions: {},
+            });
+            await betterKV.del(message.messageId, 'HrsWatchVotes');
+          }
+        }
+      }
+    } else if (
+      (downvotes > upvotes && !isPVoter) ||
+      (isPVoter && radded && message.emoji.name == '⬇️')
+    ) {
+      var matches = actMsg!.content.match(
+        /(Sorry for the inconvinience if I missed it :pleading_face:. Added the requested hours.\nAdded to user: <@(.*?)> .*\n.*\n.*\nHrs Added: )`(.*?)`(\n.*)/
+      );
+      //console.log(matches);
+      let doNotModfiyTime = false;
+      if (matches == null && isPVoter) {
+        matches = actMsg!.content.match(
+          /(Sorry for the inconvinience if I missed it :pleading_face:. Added the requested hours.\nAdded to user: <@(.*?)> .*\n.*\n.*\nHrs Added: )~~(.*?)~~(\n.*)/
+        );
+        doNotModfiyTime = true;
+      }
+
+      if (matches != null) {
+        var id = matches![2];
+        var hrsadded = parseFloat(matches![3]);
+        let addToUser = await discord.getUser(id);
+
+        await modlog({
+          content: `Voter \`${message.member!.user.username}#${
+            message.member!.user.discriminator
+          } (${
+            message.userId
+          })\` <@&${voterRole}> has actionably(regex found) ${
+            radded ? 'voted' : 'removed'
+          } ${message.emoji.name} on msgid=\`${
+            message.messageId
+          }\` in channelid=\`${
+            message.channelId
+          }\` \nUp:${upvotes}, Down:${downvotes} \nKV data for the same with TS=\`${timeaddedTS}\`, \nNow Should deduct time(doNotModfiyTime=\`${doNotModfiyTime}\`) for user=\`${
+            addToUser!.username
+          }#${addToUser!.discriminator} (${id})\` by hrs=\`${hrsadded}\``,
+          allowedMentions: {},
+        });
+
+        let newTotalTime: number, newTodayTime: number;
+        let origTimearray = ['0.0', '0.0'];
+
+        let exits = await betterKV.exist(addToUser!.id, 'TotalTimes');
+        if (exits) {
+          origTimearray = (await betterKV.get<string>(
+            addToUser!.id,
+            'TotalTimes'
+          ))!.split(',');
+        }
+
+        newTodayTime = parseFloat(
+          (parseFloat(origTimearray[TODAY_DATA_INDEX]) - hrsadded < 0
+            ? 0
+            : parseFloat(origTimearray[TODAY_DATA_INDEX]) - hrsadded
+          ).toFixed(2)
+        );
+        newTotalTime = parseFloat(
+          (parseFloat(origTimearray[ALLTIME_DATA_INDEX]) - hrsadded < 0
+            ? 0
+            : parseFloat(origTimearray[ALLTIME_DATA_INDEX]) - hrsadded
+          ).toFixed(2)
+        );
+
+        if (!doNotModfiyTime)
+          await setTotalHrs(newTotalTime, newTodayTime, actMsg!, addToUser!);
+
+        if (!isNaN(hrsadded)) {
+          await actMsg!.edit(
+            matches![1] +
+              '~~' +
+              hrsadded +
+              '~~' +
+              matches![4] +
+              (isPVoter
+                ? `\nPermanently set by mod: \`${
+                    message.member!.user.username
+                  }#${message.member!.user.discriminator} (${
+                    message.member!.user.id
+                  })\``
+                : '')
+          );
+
+          if (isPVoter) {
+            await modlog({
+              content: `Permanent Voter \`${message.member!.user.username}#${
+                message.member!.user.discriminator
+              } (${message.userId})\` <@&${isPVoter}> has voted ${
+                message.emoji.name
+              } on msgid=\`${message.messageId}\` in channelid=\`${
+                message.channelId
+              }\` \nNow Removing KV data for the same with TS=\`${timeaddedTS}\`.`,
+              allowedMentions: {},
+            });
+            await betterKV.del(message.messageId, 'HrsWatchVotes');
+          }
+        }
+      }
+    }
+  } catch (e) {
+    await handleError(e);
+  }
+}
+
 // setthrs
 adminCommands.on(
   'setthrs',
@@ -706,6 +1146,13 @@ adminCommands.raw('runcroncheck', async (message) => {
     true
   );
 });
+
+async function modlog(msg: any, loginfoChannel: any = undefined) {
+  if (loginfoChannel == undefined) {
+    loginfoChannel = await discord.getGuildTextChannel(loginfoChannelID);
+  }
+  await loginfoChannel?.sendMessage(msg);
+}
 
 async function handleError(error: any, loginfochannel: any = undefined) {
   if (loginfochannel == undefined) {
