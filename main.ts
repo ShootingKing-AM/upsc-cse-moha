@@ -35,7 +35,7 @@ let arrHoursLevels = [
   [500, '863889975753834516'], //Noble 500-580h
   [580, '863892097375272970'], //Savant -660h
   [660, '863891395075768341'], //Sage 660-720h
-  [720, '863892888180883467'] //Grand Sage, 720h+
+  [720, '863892888180883467'], //Grand Sage, 720h+
 ];
 
 let VoteRoles = [
@@ -1649,11 +1649,11 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
                 dateStyle: 'long',
                 timeStyle: 'long',
               }
-            )}\` and started at \`unknown\`.\nPlease contact Mods.` //has left the voice channel
+            )}\` and started at \`unknown\`.\nPlease use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
           );
         } else {
           await memberinfochannel?.sendMessage(
-            `**Error** Occred in Saving: \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in <#${oldState.channelId}> :smiling_face_with_tear:. Please contact Mods.` //has left the voice channel
+            `**Error** Occred in Saving: \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in <#${oldState.channelId}> :smiling_face_with_tear:. Please use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
           );
         }
         return;
@@ -1691,7 +1691,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             );
 
             await memberinfochannel?.sendMessage(
-              `**Error** Occred in Saving (hrsOld[]): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in <#${oldState.channelId}> :smiling_face_with_tear: Please contact Mods.` //has left the voice channel
+              `**Error** Occred in Saving (hrsOld[]): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in <#${oldState.channelId}> :smiling_face_with_tear: Please use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
             );
             return;
           }
@@ -1744,7 +1744,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             );
 
             await memberinfochannel?.sendMessage(
-              `Error Occred in Saving (hrsOld): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in <#${oldState.channelId}> :smiling_face_with_tear: Please contact Mods.` //has left the voice channel
+              `Error Occred in Saving (hrsOld): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in <#${oldState.channelId}> :smiling_face_with_tear: Please use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
             );
             return;
           }
@@ -1918,7 +1918,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             dateStyle: 'long',
             timeStyle: 'long',
           }
-        )}\` seems not added to studyTime :smiling_face_with_tear:.\nMax Time Inconsistency: ${szExtTimeSpent}. Please contact Mods.\nTrying to properly track present study session :white_check_mark:` //has left the voice channel
+        )}\` seems not added to studyTime :smiling_face_with_tear:.\nMax Time Inconsistency: ${szExtTimeSpent}. Please use \`${defaultPrefix}addmins\` to adjust your own studytime.\nTrying to properly track present study session :white_check_mark:` //has left the voice channel
       );
     }
 
