@@ -1565,11 +1565,13 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
           .getGuild()
           .then((g) => g.getVoiceState(userid));
         //console.log('test 1');
+        let presentChannel = await presentVoiceState!.getChannel();
+
         if (
           presentVoiceState!.selfStream == false &&
           presentVoiceState!.selfVideo == false &&
           isCamSSOnlyChannelCategory(
-            (await presentVoiceState!.getChannel())! as discord.GuildVoiceChannel
+            presentChannel as discord.GuildVoiceChannel
           )
         ) {
           //console.log('test 1');
@@ -1584,14 +1586,18 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
           await memberinfochannel!.sendMessage(
             `${(
               memeber as discord.GuildMember
-            ).toMention()} has been moved to :speaker: \`${channelName}\` for not using Cam or ScreenShare.`
+            ).toMention()} has been moved to :speaker: \`${channelName}\` for not using Cam or ScreenShare from :speaker: <#${
+              presentChannel!.id
+            }>`
           );
           await loginfochannel!.sendMessage({
             content: `${(memeber as discord.GuildMember).toMention()}(\`${(
               memeber as discord.GuildMember
             ).user.getTag()}\`) (\`${
               (memeber as discord.GuildMember).user.id
-            }\`) has been moved to :speaker: \`${channelName}\` for not using Cam or ScreenShare.`,
+            }\`) has been moved to :speaker: \`${channelName}\` for not using Cam or ScreenShare from :speaker: <#${
+              presentChannel!.id
+            }> \`${presentChannel!.name}\``,
             allowedMentions: {},
           });
         }
@@ -1649,11 +1655,15 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
                 dateStyle: 'long',
                 timeStyle: 'long',
               }
-            )}\` and started at \`unknown\`.\nPlease use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
+            )}\` and started at \`unknown\`.\n${newState.member.toMention()} please use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
           );
         } else {
           await memberinfochannel?.sendMessage(
-            `**Error** Occred in Saving: \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in <#${oldState.channelId}> :smiling_face_with_tear:. Please use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
+            `**Error** Occred in Saving: \`${newState.member.user.username}#${
+              newState.member.user.discriminator
+            }\` has stopped studying in <#${
+              oldState.channelId
+            }> :smiling_face_with_tear:. ${newState.member.toMention()} please use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
           );
         }
         return;
@@ -1691,7 +1701,13 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             );
 
             await memberinfochannel?.sendMessage(
-              `**Error** Occred in Saving (hrsOld[]): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in <#${oldState.channelId}> :smiling_face_with_tear: Please use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
+              `**Error** Occred in Saving (hrsOld[]): \`${
+                newState.member.user.username
+              }#${
+                newState.member.user.discriminator
+              }\` has stopped studying in <#${
+                oldState.channelId
+              }> :smiling_face_with_tear: ${newState.member.toMention()} please use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
             );
             return;
           }
@@ -1744,7 +1760,13 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             );
 
             await memberinfochannel?.sendMessage(
-              `Error Occred in Saving (hrsOld): \`${newState.member.user.username}#${newState.member.user.discriminator}\` has stopped studying in <#${oldState.channelId}> :smiling_face_with_tear: Please use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
+              `Error Occred in Saving (hrsOld): \`${
+                newState.member.user.username
+              }#${
+                newState.member.user.discriminator
+              }\` has stopped studying in <#${
+                oldState.channelId
+              }> :smiling_face_with_tear: ${newState.member.toMention()} please use \`${defaultPrefix}addmins\` to adjust your own studytime.` //has left the voice channel
             );
             return;
           }
@@ -1918,7 +1940,7 @@ discord.on('VOICE_STATE_UPDATE', async (newState, oldState) => {
             dateStyle: 'long',
             timeStyle: 'long',
           }
-        )}\` seems not added to studyTime :smiling_face_with_tear:.\nMax Time Inconsistency: ${szExtTimeSpent}. Please use \`${defaultPrefix}addmins\` to adjust your own studytime.\nTrying to properly track present study session :white_check_mark:` //has left the voice channel
+        )}\` seems not added to studyTime :smiling_face_with_tear:.\nMax Time Inconsistency: ${szExtTimeSpent}. ${newState.member.toMention()} please use \`${defaultPrefix}addmins\` to adjust your own studytime.\nTrying to properly track present study session :white_check_mark:` //has left the voice channel
       );
     }
 
@@ -1995,7 +2017,7 @@ async function updateLevel(
           await loginfochannel.sendMessage(
             `\`${userObj.user.getTag()}\`(${
               userObj.user.id
-            }) ${userObj.toMention()} has ranked up to **` +
+            }) ${userObj.user.getTag()} has ranked up to **` +
               toRole?.name +
               `**(${toRole?.toMention()}) from ` +
               fromRole?.name +
