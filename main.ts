@@ -435,6 +435,12 @@ async function updateStickyTodayLB(
     await betterKV.save('STICKY_MSGID', reply.id, 'MohaAdmin');
   } catch (e) {
     await handleError(e);
+    if (e instanceof discord.ApiError) {
+      if (e.code == 10008) {
+        // Unknown Message
+        await betterKV.save('STICKY_MSGID', '', 'MohaAdmin');
+      }
+    }
   }
 }
 
