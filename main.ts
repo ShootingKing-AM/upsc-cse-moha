@@ -11,11 +11,11 @@ let channelToSwitch = '770632381598138431'; // Silent-self-study channel | Chann
 let channelCategoriesToWatch = [
   '874359220181536849',
   '910598376893063188',
-  '881607690130952273',
+  '1122122794067570689', // Custom VCs Category
 ]; // All Study Over Cam/SS Channels category
 let channelCategoriesCamSSOnlyToWatchCheck = [
   '874359220181536849',
-  '881607690130952273',
+  '1122122794067570689', // Custom VCs Category
 ]; // Study Over Cam/SS ONLY categories - for AFK Check; will be moved if not using Cam /SS
 
 let leaderboardchannel = '940621960768004106'; // Channel to send daily Leaderboard top messages to
