@@ -1167,29 +1167,72 @@ async function modlog(msg: any, loginfoChannel: any = undefined) {
   await loginfoChannel?.sendMessage(msg);
 }
 
+function escapeMarkdown(text: string) {
+  var unescaped = text.replace(/\\(\*|_|`|~|\\)/g, '$1'); // unescape any "backslashed" character
+  var escaped = unescaped.replace(/(\*|_|`|~|\\)/g, '\\$1'); // escape *, _, `, ~, \
+  return escaped;
+}
+
+async function sendDividedMessage(
+  channel: discord.GuildTextChannel,
+  msg: string
+) {
+  const MAX_CONTENT_LENGTH = 2000;
+  const MAX_LENGTH = MAX_CONTENT_LENGTH - 32; // for pre fix and post fix
+  //msg = escapeMarkdown(msg);
+
+  while (msg.length > MAX_LENGTH) {
+    let slice = msg.slice(0, MAX_LENGTH);
+    msg = msg.slice(MAX_LENGTH, msg.length);
+    await channel.sendMessage('```javascript\n' + slice + '\n```');
+  }
+
+  if (msg.length > 0)
+    await channel.sendMessage('```javascript\n' + msg + '\n```');
+}
+
 async function handleError(error: any, loginfochannel: any = undefined) {
   if (loginfochannel == undefined) {
     loginfochannel = await discord.getGuildTextChannel(loginfoChannelID);
   }
   if (error instanceof discord.ApiError) {
-    await loginfochannel?.sendMessage(
-      `\`\`\`javascript\n[ERROR] discord.ApiError caught: Code: ${error.code}\n` +
+    // await loginfochannel?.sendMessage(
+    //   `\`\`\`javascript\n[ERROR] discord.ApiError caught: Code: ${error.code}\n` +
+    //     `Endpoint: ${error.endpoint}\n` +
+    //     `httpMethod: ${error.httpMethod}\n` +
+    //     `httpStatus: ${error.httpStatus}\n` +
+    //     `httpStatusText: ${error.httpStatusText}\n` +
+    //     `message: ${error.message}\n` +
+    //     `name: ${error.name}\n` +
+    //     `stack: ${error.stack}\n \`\`\``
+    // );
+    await sendDividedMessage(
+      loginfochannel,
+      `[ERROR] discord.ApiError caught: Code: ${error.code}\n` +
         `Endpoint: ${error.endpoint}\n` +
         `httpMethod: ${error.httpMethod}\n` +
         `httpStatus: ${error.httpStatus}\n` +
         `httpStatusText: ${error.httpStatusText}\n` +
         `message: ${error.message}\n` +
         `name: ${error.name}\n` +
-        `stack: ${error.stack}\n \`\`\``
+        `stack: ${error.stack!}`
     );
   } else {
-    await loginfochannel?.sendMessage(
-      `\`\`\`javascript\n[ERROR] Generic Error caught: ${error}\n` +
+    await sendDividedMessage(
+      loginfochannel,
+      `[ERROR] Generic Error caught: ${error}\n` +
         `type: ${typeof error}\n` +
         `message: ${error.message}\n` +
         `Error name: ${error.name}\n` +
-        `stack: ${error.stack}\n \`\`\``
+        `stack: ${error.stack!}`
     );
+    // await loginfochannel?.sendMessage(
+    //   `\`\`\`javascript\n[ERROR] Generic Error caught: ${error}\n` +
+    //     `type: ${typeof error}\n` +
+    //     `message: ${error.message}\n` +
+    //     `Error name: ${error.name}\n` +
+    //     `stack: ${error.stack}\n \`\`\``
+    // );
   }
 }
 
@@ -1279,7 +1322,7 @@ async function sendTopPicToChannel(
   loginfoChannel: discord.GuildTextChannel,
   what: number
 ) {
-  await replyChannel.triggerTypingIndicator();
+  // await replyChannel.triggerTypingIndicator();
   let topMessageID = await getTopMessageID(what);
   //let msg = '**LeaderBoard** (__Today__)\n\n';
 
@@ -2197,7 +2240,7 @@ async function testVar(
   msg: string
 ) {
   if (variable == null || variable == undefined) {
-    await loginfochannel?.triggerTypingIndicator();
+    // await loginfochannel?.triggerTypingIndicator();
     //await sleep(1200);
     await loginfochannel?.sendMessage(msg + variable);
   }
